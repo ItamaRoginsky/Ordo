@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getOrdoUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { BoardView } from "@/components/board/BoardView";
+import { BoardClient } from "@/components/board/BoardClient";
 
 export default async function BoardPage({ params }: { params: Promise<{ boardId: string }> }) {
   const { boardId } = await params;
@@ -26,5 +26,5 @@ export default async function BoardPage({ params }: { params: Promise<{ boardId:
 
   if (!board || board.ownerId !== user.id) notFound();
 
-  return <BoardView board={board} />;
+  return <BoardClient boardId={boardId} initialData={board} />;
 }
