@@ -1,0 +1,3 @@
+node_modules
+.next
+prisma/prisma/dev.db
