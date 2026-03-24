@@ -25,10 +25,13 @@ export async function POST(req: NextRequest) {
     });
     await tx.column.createMany({
       data: [
-        { boardId: b.id, name: "Status",   type: "status",   position: 0 },
+        { boardId: b.id, name: "Status", type: "status", position: 0 },
         { boardId: b.id, name: "Priority", type: "priority", position: 1 },
-        { boardId: b.id, name: "Due date", type: "date",     position: 2 },
+        { boardId: b.id, name: "Due date", type: "date", position: 2 },
       ],
+    });
+    await tx.group.create({
+      data: { boardId: b.id, name: "New Group", position: 0, color: "#579bfc" },
     });
     return b;
   });

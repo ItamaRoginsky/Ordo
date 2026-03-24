@@ -179,7 +179,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           {data.todayAgenda.length === 0 ? (
-            <p className="text-sm py-4" style={{ color: "var(--text-4)" }}>Nothing planned for today — add tasks in My Day ☀️</p>
+            <p className="text-sm py-4" style={{ color: "var(--text-4)" }}>Nothing planned for today - add tasks in My Day </p>
           ) : (
             <div className="space-y-1">
               {data.todayAgenda.map((item) => (

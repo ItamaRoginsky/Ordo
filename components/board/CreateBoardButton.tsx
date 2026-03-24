@@ -15,21 +15,33 @@ export function CreateBoardButton() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const [error, setError] = useState("");
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
-    const res = await fetch("/api/boards", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), icon, color }),
-    });
-    const board = await res.json();
-    setLoading(false);
-    setOpen(false);
-    setName("");
-    router.push(`/boards/${board.id}`);
-    router.refresh();
+    setError("");
+    try {
+      const res = await fetch("/api/boards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), icon, color }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create project");
+      }
+      const board = await res.json();
+      setOpen(false);
+      setName("");
+      router.push(`/boards/${board.id}`);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
