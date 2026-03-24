@@ -37,5 +37,17 @@ export async function GET(req: NextRequest) {
   });
 
   const inboxGroupId = await getInboxGroupId(me.id);
-  return NextResponse.json({ items, weekStart: weekStart.toISOString(), inboxGroupId });
+
+  const inboxBoard = await db.board.findFirst({
+    where: { ownerId: me.id, isSystem: true, type: "inbox" },
+    select: { id: true, name: true },
+  });
+
+  const projects = await db.board.findMany({
+    where: { ownerId: me.id, type: "project" },
+    select: { id: true, name: true, color: true, icon: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return NextResponse.json({ items, weekStart: weekStart.toISOString(), inboxGroupId, inboxBoard, projects });
 }

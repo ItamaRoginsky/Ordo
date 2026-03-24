@@ -5,35 +5,121 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Group, Item, Column, ColumnValue } from "@prisma/client";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { ColHeaders } from "./ColHeaders";
 import { ItemRow } from "./ItemRow";
 
 type ItemWithValues = Item & { columnValues: ColumnValue[] };
 type GroupWithItems = Group & { items: ItemWithValues[] };
 
+function SortableItemRow({
+  item,
+  columns,
+  boardId,
+  boardName,
+  boardIcon,
+  boardColor,
+}: {
+  item: ItemWithValues;
+  columns: Column[];
+  boardId: string;
+  boardName?: string;
+  boardIcon?: string | null;
+  boardColor?: string | null;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <ItemRow
+        item={item}
+        columns={columns}
+        boardId={boardId}
+        boardName={boardName}
+        boardIcon={boardIcon}
+        boardColor={boardColor}
+        dragHandleProps={listeners}
+      />
+    </div>
+  );
+}
+
 export function GroupRow({
   group,
   columns,
   boardId,
+  boardName,
+  boardIcon,
+  boardColor,
 }: {
   group: GroupWithItems;
   columns: Column[];
   boardId: string;
+  boardName?: string;
+  boardIcon?: string | null;
+  boardColor?: string | null;
 }) {
   const storageKey = `ordo-collapsed-${group.id}`;
   const [collapsed, setCollapsed] = useState(
     () => typeof window !== "undefined" && localStorage.getItem(storageKey) === "true"
   );
+  const [items, setItems] = useState(group.items);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const addInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const color = group.color ?? "#5b9cf6";
 
+  const prevGroupItems = useRef(group.items);
+  if (group.items !== prevGroupItems.current) {
+    prevGroupItems.current = group.items;
+    setItems(group.items);
+  }
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
   function toggleCollapse() {
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem(storageKey, String(next));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+    const reordered = arrayMove(items, oldIndex, newIndex);
+    setItems(reordered);
+    fetch(`/api/groups/${group.id}/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemIds: reordered.map((i) => i.id) }),
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+    });
   }
 
   const addItem = useMutation({
@@ -117,38 +203,50 @@ export function GroupRow({
       <div className="flex items-center gap-2 mb-1.5 pl-1 group/hdr">
         <button
           onClick={toggleCollapse}
-          className="text-white/20 hover:text-white/60 transition-colors p-0.5 rounded"
+          style={{ color: "var(--text-4)" }}
+          className="hover:opacity-80 transition-opacity p-0.5 rounded"
         >
           {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
         </button>
-        <span
-          className="w-2 h-2 rounded-full shrink-0"
-          style={{ backgroundColor: color }}
-        />
-        <h3
-          className="text-sm font-semibold"
-          style={{ color }}
-        >
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+        <h3 className="text-sm font-semibold" style={{ color }}>
           {group.name}
         </h3>
-        <span className="text-xs text-white/20">{group.items.length}</span>
+        <span className="text-xs" style={{ color: "var(--text-4)" }}>{items.length}</span>
+        {items.length > 0 && (() => {
+          const done = items.filter((i: any) => i.completedAt).length;
+          const pct = Math.round((done / items.length) * 100);
+          return (
+            <div className="flex items-center gap-1.5 ml-2">
+              <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+              </div>
+              <span className="text-[10px]" style={{ color: "var(--text-4)" }}>{pct}%</span>
+            </div>
+          );
+        })()}
 
         {/* Kebab menu */}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="ml-1 p-1 rounded opacity-0 group-hover/hdr:opacity-100 hover:bg-white/[0.06] text-white/30 hover:text-white/70 transition-all">
+            <button
+              className="ml-1 p-1 rounded opacity-0 group-hover/hdr:opacity-100 transition-all"
+              style={{ color: "var(--text-3)", background: "transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
+            >
               <MoreHorizontal size={14} />
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content
-              className="min-w-[180px] bg-[#252525] border border-white/[0.09] rounded-xl shadow-2xl p-1 z-50"
+              style={{ minWidth: 180, background: "var(--bg-popover)", border: "1px solid var(--border-strong)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.24)", padding: 4, zIndex: 50 }}
               sideOffset={6}
             >
               <DropdownMenu.Item
                 className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 rounded-lg hover:bg-red-500/10 cursor-pointer outline-none transition-colors"
                 onSelect={() => {
-                  if (confirm(`Delete "${group.name}" and all ${group.items.length} items?`))
+                  if (confirm(`Delete "${group.name}" and all ${items.length} items?`))
                     deleteGroup.mutate();
                 }}
               >
@@ -166,44 +264,63 @@ export function GroupRow({
         style={{ maxHeight: collapsed ? 0 : "9999px", opacity: collapsed ? 0 : 1 }}
       >
         <div
-          className="ml-4 rounded-xl overflow-hidden border border-white/[0.07] bg-[#1c1c1c]"
-          style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.35)" }}
+          className="ml-4 rounded-xl overflow-hidden"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-card)",
+            boxShadow: "var(--card-shadow)",
+          }}
         >
           <div className="relative">
             {/* Left color accent bar */}
-            <div
-              className="absolute left-0 top-0 bottom-0 w-[3px]"
-              style={{ backgroundColor: color }}
-            />
+            <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: color }} />
             <div className="pl-[3px]">
               <ColHeaders columns={columns} />
-              {group.items.map((item) => (
-                <ItemRow key={item.id} item={item} columns={columns} boardId={boardId} />
-              ))}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                  {items.map((item) => (
+                    <SortableItemRow
+                      key={item.id}
+                      item={item}
+                      columns={columns}
+                      boardId={boardId}
+                      boardName={boardName}
+                      boardIcon={boardIcon}
+                      boardColor={boardColor}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
               {/* Add item row */}
               {isAddingItem ? (
-                <div className="flex items-center gap-2 px-5 py-2 border-t border-white/[0.05]">
+                <div className="flex items-center gap-2 px-5 py-2" style={{ borderTop: "1px solid var(--border)" }}>
                   <input
                     ref={addInputRef}
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") submitItem();
-                      if (e.key === "Escape") {
-                        setIsAddingItem(false);
-                        setNewItemName("");
-                      }
+                      if (e.key === "Escape") { setIsAddingItem(false); setNewItemName(""); }
                     }}
                     onBlur={submitItem}
                     placeholder="Item name"
-                    className="flex-1 px-2 py-1 text-sm bg-[#252525] border border-[#5b9cf6]/40 text-white/90 rounded-lg outline-none focus:border-[#5b9cf6]/70 focus:ring-2 focus:ring-[#5b9cf6]/10 placeholder:text-white/20 transition-all"
+                    className="flex-1 px-2 py-1 text-sm rounded-lg outline-none transition-all"
+                    style={{
+                      background: "var(--bg-input)",
+                      border: "1px solid var(--accent)",
+                      color: "var(--text-1)",
+                    }}
                     disabled={addItem.isPending}
                   />
                 </div>
               ) : (
                 <div
                   onClick={openAddItem}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm text-white/25 hover:text-white/50 hover:bg-white/[0.02] cursor-pointer transition-colors border-t border-white/[0.05]"
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm cursor-pointer transition-colors"
+                  style={{ color: "var(--text-4)", borderTop: "1px solid var(--border)" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
                   <Plus size={13} />
                   Add item

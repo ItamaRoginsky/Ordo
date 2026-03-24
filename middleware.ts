@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth0 } from "@/lib/auth0";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes
@@ -9,7 +9,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Run auth0 proxy (handles /auth/* routes + token refresh)
+  // Run auth0 middleware (handles /auth/* routes + token refresh)
   const authResponse = await auth0.middleware(request);
 
   // If auth0 issued a redirect (e.g. to /auth/login), honour it

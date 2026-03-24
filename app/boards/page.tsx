@@ -12,13 +12,13 @@ export default async function BoardsPage() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-xl font-semibold text-white/90 tracking-tight">My Boards</h1>
+        <h1 className="text-xl font-semibold text-white/90 tracking-tight">My Projects</h1>
         <CreateBoardButton />
       </div>
 
       {boards.length === 0 ? (
         <div className="text-center py-24">
-          <p className="text-white/25 text-sm mb-4">No boards yet</p>
+          <p className="text-white/25 text-sm mb-4">No projects yet</p>
           <CreateBoardButton />
         </div>
       ) : (

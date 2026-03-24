@@ -4,6 +4,7 @@ import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 import { getOrdoUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { ThemeProvider } from "@/lib/theme";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,7 +15,6 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getOrdoUser();
 
-  // Check isActive — skip on public routes so we don't redirect-loop
   const headersList = await headers();
   const pathname = headersList.get("x-invoke-path") ?? "";
   const isPublic = pathname === "/suspended" || pathname === "/login" || pathname.startsWith("/auth");
@@ -24,9 +24,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="en" className={inter.className}>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
+      <head>
+        {/* Prevent flash of wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('ordo-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
+          }}
+        />
+      </head>
       <body>
-        <Auth0Provider>{children}</Auth0Provider>
+        <Auth0Provider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </Auth0Provider>
       </body>
     </html>
   );

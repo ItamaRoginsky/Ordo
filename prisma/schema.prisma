@@ -33,9 +33,10 @@ model Board {
   isSystem  Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  groups  Group[]
-  columns Column[]
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  groups       Group[]
+  columns      Column[]
+  customFields CustomField[]
 }
 
 model Group {
@@ -59,10 +60,19 @@ model Item {
   scheduledDate DateTime?
   isToday       Boolean   @default(false)
   completedAt   DateTime?
+  priority      String?
+  category      String?
+  parentId      String?
+  description   String?
+  deadline      DateTime?
 
-  group        Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  assignee     User?         @relation("ItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  group        Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assignee     User?              @relation("ItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   columnValues ColumnValue[]
+  customValues CustomFieldValue[]
+  comments     Comment[]
+  parent       Item?              @relation("SubItems", fields: [parentId], references: [id], onDelete: SetNull)
+  subItems     Item[]             @relation("SubItems")
 }
 
 model Column {
@@ -86,6 +96,39 @@ model ColumnValue {
   column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, columnId])
+}
+
+model CustomField {
+  id       String  @id @default(uuid())
+  boardId  String
+  name     String
+  type     String  // "text" | "url" | "number" | "checkbox"
+  position Int     @default(0)
+
+  board  Board              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  values CustomFieldValue[]
+}
+
+model CustomFieldValue {
+  id      String @id @default(uuid())
+  itemId  String
+  fieldId String
+  value   String // stored as JSON string
+
+  item  Item        @relation(fields: [itemId],  references: [id], onDelete: Cascade)
+  field CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, fieldId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  itemId    String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {

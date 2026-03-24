@@ -4,30 +4,113 @@
   box-sizing: border-box;
 }
 
-html {
+/* ── Theme variables ──────────────────────────────────────────────────────── */
+:root {
   color-scheme: dark;
+
+  /* Backgrounds */
+  --bg-page:        #111111;
+  --bg-sidebar:     #141414;
+  --bg-card:        #1c1c1c;
+  --bg-popover:     #252525;
+  --bg-input:       rgba(255,255,255,0.05);
+  --bg-hover:       rgba(255,255,255,0.04);
+  --bg-active:      rgba(255,255,255,0.07);
+
+  /* Borders */
+  --border:         rgba(255,255,255,0.07);
+  --border-strong:  rgba(255,255,255,0.12);
+
+  /* Text */
+  --text-1:  rgba(255,255,255,0.90);
+  --text-2:  rgba(255,255,255,0.45);
+  --text-3:  rgba(255,255,255,0.25);
+  --text-4:  rgba(255,255,255,0.15);
+
+  /* Accent */
+  --accent:         #5b9cf6;
+  --accent-hover:   #4a8ee6;
+  --accent-subtle:  rgba(91,156,246,0.12);
+  --nav-active-border: #5b9cf6;
+
+  /* Charts */
+  --chart-primary:  #5b9cf6;
+
+  /* System semantic */
+  --sys-green:  #22c55e;
+  --sys-red:    #ef4444;
+  --sys-orange: #f97316;
+
+  /* Elevation */
+  --card-shadow:    none;
+  --radius-card:    10px;
+
+  /* Scrollbar */
+  --scrollbar-track: #1a1a1a;
+  --scrollbar-thumb: #333333;
 }
 
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Backgrounds — iOS layered system */
+  --bg-page:        #F2F2F7;
+  --bg-sidebar:     #F8F8F8;
+  --bg-card:        #FFFFFF;
+  --bg-popover:     #FFFFFF;
+  --bg-input:       #F2F2F7;
+  --bg-hover:       #F5F5F5;
+  --bg-active:      #EBEBEB;
+
+  /* Borders — iOS separator */
+  --border:         #E8E8E8;
+  --border-strong:  #D1D1D6;
+
+  /* Text — iOS label hierarchy */
+  --text-1:  #000000;
+  --text-2:  #3C3C43;
+  --text-3:  #8A8A8E;
+  --text-4:  #C7C7CC;
+
+  /* Accent — black for nav active */
+  --accent:        #000000;
+  --accent-hover:  #1a1a1a;
+  --accent-subtle: rgba(0,0,0,0.05);
+  --nav-active-border: #000000;
+
+  /* Charts */
+  --chart-primary: #2563EB;
+
+  /* iOS system semantic */
+  --sys-green:  #34C759;
+  --sys-red:    #FF3B30;
+  --sys-orange: #FF9500;
+
+  /* Elevation */
+  --card-shadow:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --radius-card:  12px;
+
+  /* Scrollbar */
+  --scrollbar-track: #F2F2F7;
+  --scrollbar-thumb: #D1D1D6;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
 body {
   margin: 0;
-  background: #111111;
-  color: #e2e2e2;
+  background: var(--bg-page);
+  color: var(--text-1);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
+/* ── Scrollbars ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { opacity: 0.8; }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }

@@ -67,7 +67,7 @@ export function BoardView({ board }: { board: BoardWithData }) {
       <div className="flex-1 overflow-auto px-8 py-6">
         {board.groups.length === 0 && !isAddingGroup ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <p className="text-white/25 text-sm">This board has no groups yet</p>
+            <p className="text-white/25 text-sm">This project has no groups yet</p>
             <button
               onClick={openAddGroup}
               className="flex items-center gap-2 px-4 py-2 text-sm text-[#5b9cf6] border border-[#5b9cf6]/25 rounded-lg hover:bg-[#5b9cf6]/10 transition-colors"
@@ -85,6 +85,9 @@ export function BoardView({ board }: { board: BoardWithData }) {
                   group={group}
                   columns={board.columns}
                   boardId={board.id}
+                  boardName={board.name}
+                  boardIcon={board.icon ?? null}
+                  boardColor={board.color ?? null}
                 />
               ))}
             </div>

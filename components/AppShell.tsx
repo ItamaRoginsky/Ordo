@@ -14,7 +14,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryProvider>
-      <div className="flex h-screen overflow-hidden bg-[#111111]">
+      <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg-page)" }}>
         <Sidebar boards={boards} user={user} />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>

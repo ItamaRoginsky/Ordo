@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Sun, CalendarDays, BarChart2, Shield, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Sun, Moon, LogOut, MoreHorizontal, Trash2 } from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Board, User } from "@prisma/client";
+import { useTheme } from "@/lib/theme";
 
 const DOT_COLORS = [
   "#5b9cf6", "#34d399", "#f59e0b", "#f87171", "#a78bfa",
@@ -17,84 +22,116 @@ interface SidebarProps {
 
 export function Sidebar({ boards, user }: SidebarProps) {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="w-56 h-screen bg-[#141414] flex flex-col shrink-0 overflow-hidden border-r border-white/[0.06]">
+    <div
+      style={{
+        width: 224,
+        height: "100vh",
+        background: "var(--bg-sidebar)",
+        borderRight: "1px solid var(--border)",
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+        overflow: "hidden",
+      }}
+    >
       {/* Logo */}
-      <div className="px-5 py-4 border-b border-white/[0.06]">
-        <span className="font-semibold text-white/90 text-lg tracking-tight">Ordo</span>
+      <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{
+          width: 24, height: 24, borderRadius: 7,
+          background: "var(--text-1)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 13, fontWeight: 700,
+          color: "var(--bg-card)",
+          fontFamily: "serif",
+          flexShrink: 0,
+        }}>
+          O
+        </div>
+        <span style={{ fontWeight: 600, color: "var(--text-1)", fontSize: 15, letterSpacing: "-0.02em" }}>
+          Ordo
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2">
+      <div style={{ flex: 1, overflowY: "auto", paddingTop: 8, paddingBottom: 8 }}>
         {/* My Space section */}
-        <div className="px-4 py-1.5">
-          <span className="text-[10px] text-white/25 uppercase tracking-widest font-semibold">
+        <div style={{ padding: "10px 16px 4px" }}>
+          <span style={{ color: "var(--text-4)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>
             My Space
           </span>
         </div>
-        <nav className="px-2 space-y-0.5 mb-3">
-          <NavItem href="/boards"    icon={<LayoutDashboard size={14} />} label="Home"      active={pathname === "/boards"} />
-          <NavItem href="/today"     icon={<Sun size={14} />}             label="My Day"     active={pathname === "/today"} />
-          <NavItem href="/week"      icon={<CalendarDays size={14} />}    label="My Week"    active={pathname === "/week"} />
-          <NavItem href="/dashboard" icon={<BarChart2 size={14} />}       label="Dashboard"  active={pathname === "/dashboard"} />
+        <nav style={{ padding: "0 8px", marginBottom: 12 }}>
+          <NavItem href="/dashboard" label="Home"    active={pathname === "/dashboard" || pathname === "/"} />
+          <NavItem href="/today"     label="My Day"  active={pathname === "/today"} />
+          <NavItem href="/week"      label="My Week" active={pathname === "/week"} />
           {user?.isAdmin && (
-            <NavItem href="/admin/users" icon={<Shield size={14} />} label="Admin" active={pathname.startsWith("/admin")} />
+            <NavItem href="/admin/users" label="Admin" active={pathname.startsWith("/admin")} />
           )}
         </nav>
 
-        <div className="mx-3 border-t border-white/[0.06] mb-2" />
+        <div style={{ margin: "0 12px 8px", borderTop: "1px solid var(--border)" }} />
 
         {/* Projects section */}
-        <div className="px-4 py-1.5">
-          <span className="text-[10px] text-white/25 uppercase tracking-widest font-semibold">
+        <div style={{ padding: "10px 16px 4px" }}>
+          <span style={{ color: "var(--text-4)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>
             Projects
           </span>
         </div>
-        <div className="px-2 space-y-0.5">
-          {boards.map((board, i) => {
-            const active = pathname.startsWith(`/boards/${board.id}`);
-            return (
-              <Link
-                key={board.id}
-                href={`/boards/${board.id}`}
-                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  active
-                    ? "bg-white/[0.07] text-white/90 border-r-2 border-[#5b9cf6]"
-                    : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
-                }`}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: board.color ?? DOT_COLORS[i % DOT_COLORS.length] }}
-                />
-                <span className="truncate">{board.name}</span>
-              </Link>
-            );
-          })}
+        <div style={{ padding: "0 8px" }}>
+          {boards.map((board, i) => (
+            <BoardItem
+              key={board.id}
+              board={board}
+              index={i}
+              active={pathname.startsWith(`/boards/${board.id}`)}
+            />
+          ))}
           {boards.length === 0 && (
-            <p className="px-3 py-2 text-xs text-white/20">No projects yet</p>
+            <p style={{ padding: "8px 12px", fontSize: 12, color: "var(--text-4)" }}>No projects yet</p>
           )}
         </div>
       </div>
 
-      {/* User */}
-      <div className="p-3 border-t border-white/[0.06] space-y-0.5">
-        <div className="flex items-center gap-2.5 px-2 py-1.5">
+      {/* User footer */}
+      <div style={{ padding: 12, borderTop: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px" }}>
           {user?.picture ? (
-            <img src={user.picture} alt="" className="w-6 h-6 rounded-full shrink-0" />
+            <img src={user.picture} alt="" style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0 }} />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-[#5b9cf6]/50 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(91,156,246,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
               {user?.name?.[0] ?? "?"}
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-white/80 truncate leading-tight">{user?.name}</p>
-            <p className="text-[10px] text-white/30 truncate">{user?.email}</p>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
+              {user?.name}
+            </p>
+            <p style={{ fontSize: 10, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user?.email}
+            </p>
           </div>
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            style={{
+              width: 28, height: 28, borderRadius: 7,
+              background: "var(--bg-active)",
+              border: "1px solid var(--border)",
+              cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--text-3)",
+            }}
+          >
+            {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+          </button>
         </div>
         <a
           href="/auth/logout"
-          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-white/30 hover:text-white/70 hover:bg-white/[0.04] transition-colors"
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, fontSize: 12, color: "var(--text-3)", textDecoration: "none" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <LogOut size={13} />
           <span>Sign out</span>
@@ -104,28 +141,161 @@ export function Sidebar({ boards, user }: SidebarProps) {
   );
 }
 
-function NavItem({
-  href,
-  icon,
-  label,
-  active,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-}) {
+function NavItem({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-        active
-          ? "bg-white/[0.07] text-white/90 border-r-2 border-[#5b9cf6]"
-          : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
-      }`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "6px 12px",
+        borderRadius: 8,
+        fontSize: 13,
+        fontWeight: active ? 500 : 400,
+        color: active ? "var(--text-1)" : "var(--text-3)",
+        background: active ? "var(--bg-active)" : "transparent",
+        borderRight: active ? "2px solid var(--nav-active-border)" : "2px solid transparent",
+        textDecoration: "none",
+        marginBottom: 2,
+        transition: "color 0.12s, background 0.12s",
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          (e.currentTarget as HTMLElement).style.color = "var(--text-1)";
+          (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          (e.currentTarget as HTMLElement).style.color = "var(--text-3)";
+          (e.currentTarget as HTMLElement).style.background = "transparent";
+        }
+      }}
     >
-      {icon}
       {label}
     </Link>
+  );
+}
+
+function BoardItem({ board, index, active }: { board: Board; index: number; active: boolean }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const color = board.color ?? DOT_COLORS[index % DOT_COLORS.length];
+
+  async function handleDelete() {
+    setDeleting(true);
+    await fetch(`/api/boards/${board.id}`, { method: "DELETE" });
+    setDeleting(false);
+    setConfirmOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["boards"] });
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  return (
+    <div style={{ position: "relative", display: "flex", alignItems: "center" }} className="group/board">
+      <Link
+        href={`/boards/${board.id}`}
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "6px 12px",
+          borderRadius: 8,
+          fontSize: 13,
+          color: active ? "var(--text-1)" : "var(--text-3)",
+          background: active ? "var(--bg-active)" : "transparent",
+          borderRight: active ? "2px solid var(--nav-active-border)" : "2px solid transparent",
+          textDecoration: "none",
+          marginBottom: 2,
+          transition: "color 0.12s, background 0.12s",
+        }}
+        onMouseEnter={(e) => {
+          if (!active) {
+            (e.currentTarget as HTMLElement).style.color = "var(--text-1)";
+            (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            (e.currentTarget as HTMLElement).style.color = "var(--text-3)";
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+          }
+        }}
+      >
+        {/* Colored dot — user-chosen color, always visible */}
+        <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+          {board.name}
+        </span>
+      </Link>
+
+      {/* Kebab */}
+      {!board.isSystem && (
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              className="absolute right-1 opacity-0 group-hover/board:opacity-100 p-1 rounded transition-all"
+              style={{ color: "var(--text-3)", background: "transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
+            >
+              <MoreHorizontal size={13} />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              style={{ minWidth: 160, background: "var(--bg-popover)", border: "1px solid var(--border-strong)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.24)", padding: 4, zIndex: 50 }}
+              sideOffset={4}
+              align="end"
+            >
+              <DropdownMenu.Item
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 rounded-lg hover:bg-red-500/10 cursor-pointer outline-none transition-colors"
+                onSelect={() => setConfirmOpen(true)}
+              >
+                <Trash2 size={13} />
+                Delete board
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      )}
+
+      {/* Confirm dialog */}
+      <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-50" />
+          <Dialog.Content
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] rounded-2xl p-6 shadow-2xl z-50"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}
+          >
+            <Dialog.Title style={{ fontSize: 15, fontWeight: 600, color: "var(--text-1)", marginBottom: 4 }}>
+              Delete &ldquo;{board.name}&rdquo;?
+            </Dialog.Title>
+            <Dialog.Description style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 24 }}>
+              This will permanently delete all groups and items in this board. This cannot be undone.
+            </Dialog.Description>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                style={{ padding: "8px 16px", fontSize: 13, color: "var(--text-2)", background: "var(--bg-active)", border: "none", borderRadius: 8, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm text-white font-medium bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div>
   );
 }

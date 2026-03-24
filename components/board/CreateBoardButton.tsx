@@ -39,14 +39,14 @@ export function CreateBoardButton() {
         className="flex items-center gap-2 px-3.5 py-2 text-sm text-[#5b9cf6] border border-[#5b9cf6]/25 rounded-lg hover:bg-[#5b9cf6]/10 transition-colors"
       >
         <Plus size={14} />
-        New Board
+        New project
       </button>
 
       {open && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setOpen(false)}>
           <div className="bg-[#1e1e1e] border border-white/[0.09] rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-white/90">New Board</h2>
+              <h2 className="text-base font-semibold text-white/90">New project</h2>
               <button onClick={() => setOpen(false)} className="text-white/30 hover:text-white/70 transition-colors">
                 <X size={17} />
               </button>
@@ -115,7 +115,7 @@ export function CreateBoardButton() {
                   disabled={loading || !name.trim()}
                   className="flex-1 px-4 py-2 text-sm font-medium bg-[#5b9cf6] text-white rounded-lg hover:bg-[#4a8de8] disabled:opacity-40 transition-colors"
                 >
-                  {loading ? "Creating…" : "Create"}
+                  {loading ? "Creating…" : "Create project"}
                 </button>
               </div>
             </form>

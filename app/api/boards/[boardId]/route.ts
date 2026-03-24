@@ -14,12 +14,20 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ boa
         orderBy: { position: "asc" },
         include: {
           items: {
+            where: { parentId: null },
             orderBy: { position: "asc" },
-            include: { columnValues: true },
+            include: {
+              columnValues: true,
+              subItems: {
+                orderBy: { position: "asc" },
+                include: { columnValues: true },
+              },
+            },
           },
         },
       },
       columns: { orderBy: { position: "asc" } },
+      customFields: { orderBy: { position: "asc" } },
     },
   });
 
