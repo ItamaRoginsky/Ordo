@@ -233,7 +233,7 @@ export function AddTaskModal({
 }: AddTaskModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(defaultDate ?? new Date());
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(defaultDate ?? null);
   const [priority, setPriority] = useState<"p1" | "p2" | "p3" | "p4">(
     (defaultPriority as "p1" | "p2" | "p3" | "p4") ?? "p4"
   );

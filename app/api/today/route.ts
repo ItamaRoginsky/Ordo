@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       parentId: null,
       group: { board: { ownerId: me.id } },
       OR: [
+        { isToday: true },
         { scheduledDate: { gte: start, lte: end } },
         { completedAt: { gte: start, lte: end } },
       ],

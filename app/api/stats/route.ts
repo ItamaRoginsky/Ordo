@@ -44,7 +44,7 @@ export async function GET() {
   const openTasks = allItems.filter((i) => !i.completedAt).length;
 
   const overdueTasks = allItems.filter(
-    (i) => !i.completedAt && i.scheduledDate && i.scheduledDate < todayStart
+    (i) => !i.completedAt && i.deadline && i.deadline < todayStart
   ).length;
 
   const totalItems = allItems.length;
@@ -94,11 +94,12 @@ export async function GET() {
     )
     .slice(0, 6)
     .map((i) => {
-      const statusVal = i.columnValues.find((cv) => {
-        try { JSON.parse(cv.value); return true; } catch { return false; }
-      });
-      let status = null;
-      try { status = statusVal ? JSON.parse(statusVal.value) : null; } catch {}
+      // Status is stored as a plain string value in columnValues
+      const statusCv = i.columnValues[0] ?? null;
+      let status: string | null = null;
+      if (statusCv) {
+        try { status = JSON.parse(statusCv.value); } catch { status = statusCv.value; }
+      }
       return {
         id: i.id,
         name: i.name,

@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
 
   const items = await db.item.findMany({
     where: {
+      parentId: null,
       group: { board: { ownerId: me.id } },
       scheduledDate: { gte: weekStart, lte: weekEnd },
     },

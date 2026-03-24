@@ -23,6 +23,12 @@ export async function PATCH(
     return NextResponse.json({ error: "itemIds must be an array" }, { status: 400 });
   }
 
+  // Verify all items belong to this group (prevents IDOR)
+  const ownedItems = await db.item.findMany({ where: { id: { in: itemIds }, groupId } });
+  if (ownedItems.length !== itemIds.length) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await db.$transaction(
     itemIds.map((id: string, index: number) =>
       db.item.update({ where: { id }, data: { position: index } })

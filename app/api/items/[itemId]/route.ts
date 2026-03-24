@@ -24,7 +24,7 @@ export async function GET(
         include: {
             columnValues: true,
             customValues: true,
-            comments: { orderBy: { createdAt: "asc" } },
+            comments: { orderBy: { createdAt: "asc" }, include: { author: { select: { id: true, name: true, picture: true } } } },
             subItems: {
                 orderBy: { position: "asc" },
                 include: { columnValues: true },

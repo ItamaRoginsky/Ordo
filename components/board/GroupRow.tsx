@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -25,6 +25,7 @@ function SortableItemRow({
   boardName,
   boardIcon,
   boardColor,
+  groupId,
 }: {
   item: ItemWithValues;
   columns: Column[];
@@ -32,9 +33,11 @@ function SortableItemRow({
   boardName?: string;
   boardIcon?: string | null;
   boardColor?: string | null;
+  groupId: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
+    data: { groupId },
   });
 
   const style = {
@@ -84,10 +87,12 @@ export function GroupRow({
   const color = group.color ?? "#5b9cf6";
 
   const prevGroupItems = useRef(group.items);
-  if (group.items !== prevGroupItems.current) {
-    prevGroupItems.current = group.items;
-    setItems(group.items);
-  }
+  useEffect(() => {
+    if (group.items !== prevGroupItems.current) {
+      prevGroupItems.current = group.items;
+      setItems(group.items);
+    }
+  }, [group.items]);
 
   function toggleCollapse() {
     const next = !collapsed;
@@ -260,6 +265,7 @@ export function GroupRow({
                     boardName={boardName}
                     boardIcon={boardIcon}
                     boardColor={boardColor}
+                    groupId={group.id}
                   />
                 ))}
               </SortableContext>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
-import { X, Plus, ExternalLink, MoreHorizontal, Send } from "lucide-react";
+import { X, Plus, ExternalLink, Trash2, Send } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { DatePicker } from "@/components/ui/DatePicker";
 
@@ -182,7 +182,7 @@ export function TaskDetailModal({
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
               >
-                <MoreHorizontal size={14} />
+                <Trash2 size={14} />
               </button>
             )}
             <button

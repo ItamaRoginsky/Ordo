@@ -471,12 +471,20 @@ export default function TodayPage() {
   async function addSubTask(parentId: string, name: string) {
     const parent = items.find((i) => i.id === parentId);
     if (!parent) return;
-    await fetch("/api/items", {
+    const res = await fetch("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ groupId: parent.groupId, name, parentId, scheduledDate: viewDate.toISOString() }),
     });
+    const newItem = await res.json();
     queryClient.invalidateQueries({ queryKey: ["today", dateStr] });
+    if (res.ok && newItem?.id) {
+      setDetailItem((prev) =>
+        prev?.id === parentId
+          ? { ...prev, subItems: [...prev.subItems, { id: newItem.id, name, completedAt: null, priority: null, columnValues: [] }] }
+          : prev
+      );
+    }
   }
 
   async function addTask(task: NewTask) {

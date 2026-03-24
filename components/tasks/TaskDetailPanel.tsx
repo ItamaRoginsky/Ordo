@@ -30,11 +30,11 @@ const PRIORITY_COLORS = {
     badge_border: "rgba(91,156,246,0.25)",
   },
   p4: {
-    border: "rgba(255,255,255,0.15)",
+    border: "var(--border-strong)",
     bg: "transparent",
-    text: "rgba(255,255,255,0.35)",
-    badge_bg: "transparent",
-    badge_border: "rgba(255,255,255,0.1)",
+    text: "var(--text-3)",
+    badge_bg: "var(--bg-active)",
+    badge_border: "var(--border)",
   },
 };
 

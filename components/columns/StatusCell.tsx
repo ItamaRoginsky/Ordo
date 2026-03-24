@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { useTheme } from "@/lib/theme";
 
@@ -40,6 +40,8 @@ export function StatusCell({ value, itemId, columnId, onSuccess }: StatusCellPro
   const [open, setOpen] = useState(false);
   const { theme } = useTheme();
   const COLORS = theme === "light" ? COLORS_LIGHT : COLORS_DARK;
+
+  useEffect(() => { setLocalValue(value); }, [value]);
 
   const current = STATUSES.find((s) => s.value === localValue);
   const currentColors = localValue ? COLORS[localValue] : null;

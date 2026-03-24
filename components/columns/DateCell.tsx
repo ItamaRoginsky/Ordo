@@ -40,7 +40,7 @@ export function DateCell({ value, itemId, columnId, completedAt, onSuccess }: Da
         fetch(`/api/items/${itemId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scheduledDate: dateStr ? new Date(dateStr).toISOString() : null }),
+          body: JSON.stringify({ scheduledDate: dateStr ? new Date(dateStr + "T00:00:00").toISOString() : null }),
         }),
       ]);
       onSuccess();
