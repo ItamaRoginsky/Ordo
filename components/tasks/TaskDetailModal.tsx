@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { X, Plus, ExternalLink, MoreHorizontal, Send } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 interface SubItem {
   id: string;
@@ -85,6 +86,14 @@ export function TaskDetailModal({
     setDescription(item.description ?? "");
   }, [item.id, item.description]);
 
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
   // Load full item details (comments, custom fields)
   useEffect(() => {
     fetch(`/api/items/${item.id}`)
@@ -152,7 +161,7 @@ export function TaskDetailModal({
         onClick={onClose}
       />
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div
           className="rounded-2xl shadow-2xl w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}
@@ -370,59 +379,21 @@ export function TaskDetailModal({
               {/* Scheduled date */}
               <div>
                 <SideLabel label="Date" />
-                {item.scheduledDate ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: "var(--text-2)" }}>
-                      {format(parseISO(item.scheduledDate), "MMM d")}
-                    </span>
-                    <button
-                      onClick={() => onUpdate(item.id, { scheduledDate: null })}
-                      className="transition-colors"
-                      style={{ color: "var(--text-4)" }}
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => onUpdate(item.id, { scheduledDate: new Date().toISOString() })}
-                    className="text-sm transition-colors"
-                    style={{ color: "var(--text-4)" }}
-                  >
-                    Set date
-                  </button>
-                )}
+                <DatePicker
+                  value={item.scheduledDate}
+                  onChange={(iso) => onUpdate(item.id, { scheduledDate: iso })}
+                  placeholder="Set date"
+                />
               </div>
 
               {/* Deadline */}
               <div>
                 <SideLabel label="Deadline" />
-                {item.deadline ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: "var(--text-2)" }}>
-                      {format(parseISO(item.deadline), "MMM d")}
-                    </span>
-                    <button
-                      onClick={() => onUpdate(item.id, { deadline: null })}
-                      className="transition-colors"
-                      style={{ color: "var(--text-4)" }}
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 7);
-                      onUpdate(item.id, { deadline: d.toISOString() });
-                    }}
-                    className="text-sm transition-colors"
-                    style={{ color: "var(--text-4)" }}
-                  >
-                    Set deadline
-                  </button>
-                )}
+                <DatePicker
+                  value={item.deadline}
+                  onChange={(iso) => onUpdate(item.id, { deadline: iso })}
+                  placeholder="Set deadline"
+                />
               </div>
 
               {/* Priority */}

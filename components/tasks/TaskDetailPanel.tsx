@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { format, formatDistanceToNow, parseISO, isPast } from "date-fns";
 import { X, Trash2, ExternalLink, MoreHorizontal, Check } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 // ── Priority constants ──────────────────────────────────────────────────────
 const PRIORITY_COLORS = {
@@ -176,11 +177,22 @@ export function TaskDetailPanel({
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [priorityOpen, setPriorityOpen] = useState(false);
+  const [internalFields, setInternalFields] = useState<CustomField[]>([]);
+  const [internalValues, setInternalValues] = useState<CustomFieldValue[]>([]);
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
   const descRef = useRef<HTMLDivElement>(null);
 
   const boardId = item.group.board.id;
+
+  // Escape to close
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   // Sync name/desc when item changes
   useEffect(() => {
@@ -193,15 +205,21 @@ export function TaskDetailPanel({
     }
   }, [item.id]);
 
-  // Load comments
+  // Load comments + custom field values
   useEffect(() => {
     fetch(`/api/items/${item.id}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data.comments)) setComments(data.comments);
+        if (Array.isArray(data.customValues)) setInternalValues(data.customValues);
       })
       .catch(() => {});
-  }, [item.id]);
+    // Load custom fields for this board
+    fetch(`/api/custom-fields?boardId=${boardId}`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setInternalFields(data); })
+      .catch(() => {});
+  }, [item.id, boardId]);
 
   function saveName(text: string | null) {
     const n = text?.trim() ?? "";
@@ -241,9 +259,42 @@ export function TaskDetailPanel({
   }
 
   function getCustomValue(fieldId: string): unknown {
-    const cv = customFieldValues.find((v) => v.fieldId === fieldId);
+    const allVals = internalValues.length > 0 ? internalValues : customFieldValues;
+    const cv = allVals.find((v) => v.fieldId === fieldId);
     if (!cv) return null;
     try { return JSON.parse(cv.value); } catch { return cv.value; }
+  }
+
+  const activeFields = internalFields.length > 0 ? internalFields : customFields;
+
+  async function addCustomField(name: string, type: string) {
+    const res = await fetch("/api/custom-fields", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ boardId, name, type }),
+    });
+    if (res.ok) {
+      const newField = await res.json();
+      setInternalFields((prev) => [...prev, newField]);
+    }
+    onAddCustomField?.(boardId, name, type);
+  }
+
+  async function updateCustomFieldValue(fieldId: string, value: unknown) {
+    const res = await fetch("/api/custom-field-values", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId: item.id, fieldId, value }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setInternalValues((prev) => {
+        const idx = prev.findIndex((v) => v.fieldId === fieldId);
+        if (idx >= 0) return prev.map((v, i) => i === idx ? updated : v);
+        return [...prev, updated];
+      });
+    }
+    onUpdateCustomFieldValue?.(item.id, fieldId, value);
   }
 
   const pc = priorityColors(item.priority);
@@ -253,14 +304,28 @@ export function TaskDetailPanel({
   const totalSubtasks = item.subItems.length;
 
   return (
-    <div
-      className="fixed right-0 top-0 h-full w-[560px] z-40 flex flex-col rounded-l-xl overflow-hidden"
-      style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-strong)",
-        animation: "slideInRight 0.18s ease-out",
-      }}
-    >
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40"
+        style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+        onClick={onClose}
+      />
+      <div
+        className="fixed z-50 flex flex-col overflow-hidden"
+        style={{
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(90vw, 780px)",
+          maxHeight: "85vh",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-strong)",
+          borderRadius: 16,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
         {/* Breadcrumb */}
@@ -517,44 +582,39 @@ export function TaskDetailPanel({
           <div className="h-px my-1" style={{ background: "var(--border)" }} />
 
           {/* Scheduled date */}
-          <PropRow
-            label="Date"
-            value={item.scheduledDate ? format(parseISO(item.scheduledDate), "MMM d, yyyy") : null}
-            placeholder="Set date"
-            onClick={() => {
-              if (!item.scheduledDate) onUpdate(item.id, { scheduledDate: new Date().toISOString() });
-            }}
-          />
+          <div className="mb-4">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] mb-1.5" style={{ color: "var(--text-4)" }}>
+              Date
+            </p>
+            <DatePicker
+              value={item.scheduledDate}
+              onChange={(iso) => onUpdate(item.id, { scheduledDate: iso })}
+              placeholder="Set date"
+              compact
+            />
+          </div>
 
           <div className="h-px my-1" style={{ background: "var(--border)" }} />
 
           {/* Deadline */}
-          <PropRow
-            label="Deadline"
-            onClick={() => {
-              if (!item.deadline) {
-                const d = new Date();
-                d.setDate(d.getDate() + 7);
-                onUpdate(item.id, { deadline: d.toISOString() });
-              }
-            }}
-          >
-            {deadlineDate ? (
-              <span
-                className="flex items-center gap-1.5"
-                style={{ color: deadlineOverdue ? "var(--sys-red)" : "var(--text-2)" }}
-              >
-                {format(deadlineDate, "MMM d, yyyy")}
-                {deadlineOverdue && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-                    overdue
-                  </span>
-                )}
-              </span>
-            ) : (
-              <span style={{ color: "var(--text-4)" }}>Set deadline</span>
-            )}
-          </PropRow>
+          <div className="mb-4">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] mb-1.5" style={{ color: "var(--text-4)" }}>
+              Deadline
+            </p>
+            <div className="flex items-center gap-1.5">
+              <DatePicker
+                value={item.deadline}
+                onChange={(iso) => onUpdate(item.id, { deadline: iso })}
+                placeholder="Set deadline"
+                compact
+              />
+              {deadlineOverdue && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                  overdue
+                </span>
+              )}
+            </div>
+          </div>
 
           <div className="h-px my-1" style={{ background: "var(--border)" }} />
 
@@ -565,10 +625,10 @@ export function TaskDetailPanel({
           />
 
           {/* Custom fields */}
-          {customFields.length > 0 && (
+          {activeFields.length > 0 && (
             <>
               <div className="h-px my-1" style={{ background: "var(--border)" }} />
-              {customFields.map((field) => {
+              {activeFields.map((field) => {
                 const val = getCustomValue(field.id);
                 return (
                   <div key={field.id} className="mb-4">
@@ -578,7 +638,7 @@ export function TaskDetailPanel({
                     <CustomFieldEditor
                       field={field}
                       value={val}
-                      onChange={(v) => onUpdateCustomFieldValue?.(item.id, field.id, v)}
+                      onChange={(v) => updateCustomFieldValue(field.id, v)}
                     />
                   </div>
                 );
@@ -587,66 +647,63 @@ export function TaskDetailPanel({
           )}
 
           {/* Add custom field */}
-          {onAddCustomField && (
-            <>
-              <div className="h-px my-1" style={{ background: "var(--border)" }} />
-              {showAddField ? (
-                <div className="space-y-2 mt-2">
-                  <input
-                    autoFocus
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                    placeholder="Field name"
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        setShowAddField(false);
-                        setNewFieldName("");
-                      }
-                    }}
-                    className="w-full text-[11px] rounded-lg px-2 py-1.5 outline-none"
-                    style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-1)" }}
-                  />
-                  <div className="grid grid-cols-2 gap-1">
-                    {FIELD_TYPE_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.type}
-                        onClick={() => {
-                          if (newFieldName.trim()) {
-                            onAddCustomField(boardId, newFieldName.trim(), opt.type);
-                            setNewFieldName("");
-                            setShowAddField(false);
-                          }
-                        }}
-                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] transition-colors"
-                        style={{ color: "var(--text-3)", border: "1px solid var(--border)" }}
-                      >
-                        <span>{opt.icon}</span>
-                        <span>{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => {
+          <>
+            <div className="h-px my-1" style={{ background: "var(--border)" }} />
+            {showAddField ? (
+              <div className="space-y-2 mt-2">
+                <input
+                  autoFocus
+                  value={newFieldName}
+                  onChange={(e) => setNewFieldName(e.target.value)}
+                  placeholder="Field name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
                       setShowAddField(false);
                       setNewFieldName("");
-                    }}
-                    className="text-[10px] transition-colors"
-                style={{ color: "var(--text-4)" }}
-                  >
-                    Cancel
-                  </button>
+                    }
+                  }}
+                  className="w-full text-[11px] rounded-lg px-2 py-1.5 outline-none"
+                  style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+                />
+                <div className="grid grid-cols-2 gap-1">
+                  {FIELD_TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.type}
+                      onClick={() => {
+                        if (newFieldName.trim()) {
+                          addCustomField(newFieldName.trim(), opt.type);
+                          setNewFieldName("");
+                          setShowAddField(false);
+                        }
+                      }}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] transition-colors"
+                      style={{ color: "var(--text-3)", border: "1px solid var(--border)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
+                    >
+                      <span>{opt.icon}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
                 </div>
-              ) : (
                 <button
-                  onClick={() => setShowAddField(true)}
-                  className="flex items-center gap-1.5 text-[11px] mt-2 transition-colors"
-                  style={{ color: "var(--chart-primary)", opacity: 0.7 }}
+                  onClick={() => { setShowAddField(false); setNewFieldName(""); }}
+                  className="text-[10px] transition-colors"
+                  style={{ color: "var(--text-4)" }}
                 >
-                  <span className="text-base leading-none">+</span> Add field
+                  Cancel
                 </button>
-              )}
-            </>
-          )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddField(true)}
+                className="flex items-center gap-1.5 text-[11px] mt-2 transition-colors"
+                style={{ color: "var(--chart-primary)", opacity: 0.7 }}
+              >
+                <span className="text-base leading-none">+</span> Add field
+              </button>
+            )}
+          </>
 
           {/* Timestamps */}
           <div className="h-px my-3" style={{ background: "var(--border)" }} />
@@ -680,6 +737,7 @@ export function TaskDetailPanel({
         )}
       </div>
     </div>
+    </>
   );
 }
 

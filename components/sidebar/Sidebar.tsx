@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Sun, Moon, LogOut, MoreHorizontal, Trash2, Plus, X } from "lucide-react";
+import { Sun, Moon, LogOut, MoreHorizontal, Trash2, Plus, X, Search, Shield } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Board, User } from "@prisma/client";
 import { useTheme } from "@/lib/theme";
+import { CommandPalette } from "@/components/search/CommandPalette";
 
 
 const DOT_COLORS = [
@@ -24,8 +25,21 @@ interface SidebarProps {
 export function Sidebar({ boards, user }: SidebarProps) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
+    <>
     <div
       style={{
         width: 224,
@@ -45,6 +59,25 @@ export function Sidebar({ boards, user }: SidebarProps) {
         </span>
       </div>
 
+      {/* Search button */}
+      <div style={{ padding: "8px 14px 4px" }}>
+        <button
+          onClick={() => setSearchOpen(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            width: "100%", padding: "6px 10px", borderRadius: 7,
+            background: "var(--bg-active)", border: "1px solid var(--border)",
+            fontSize: 12, color: "var(--text-3)", cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
+        >
+          <Search size={13} />
+          Search
+        </button>
+      </div>
+
       <div style={{ flex: 1, overflowY: "auto", paddingTop: 8, paddingBottom: 8 }}>
         {/* My Space section */}
         <div style={{ padding: "10px 16px 4px" }}>
@@ -56,9 +89,6 @@ export function Sidebar({ boards, user }: SidebarProps) {
           <NavItem href="/dashboard" label="Home"    active={pathname === "/dashboard" || pathname === "/"} />
           <NavItem href="/today"     label="My Day"  active={pathname === "/today"} />
           <NavItem href="/week"      label="My Week" active={pathname === "/week"} />
-          {user?.isAdmin && (
-            <NavItem href="/admin/users" label="Admin" active={pathname.startsWith("/admin")} />
-          )}
         </nav>
 
         <div style={{ margin: "0 12px 8px", borderTop: "1px solid var(--border)" }} />
@@ -84,6 +114,37 @@ export function Sidebar({ boards, user }: SidebarProps) {
           )}
         </div>
       </div>
+
+      {/* Admin link */}
+      {user?.isAdmin && (
+        <div style={{ padding: "4px 8px 8px" }}>
+          <Link
+            href="/admin/users"
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "6px 12px", borderRadius: 8, fontSize: 13,
+              color: pathname.startsWith("/admin") ? "var(--text-1)" : "var(--text-3)",
+              background: pathname.startsWith("/admin") ? "var(--bg-active)" : "transparent",
+              textDecoration: "none", transition: "color 0.12s, background 0.12s",
+            }}
+            onMouseEnter={(e) => {
+              if (!pathname.startsWith("/admin")) {
+                (e.currentTarget as HTMLElement).style.color = "var(--text-1)";
+                (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!pathname.startsWith("/admin")) {
+                (e.currentTarget as HTMLElement).style.color = "var(--text-3)";
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+              }
+            }}
+          >
+            <Shield size={13} />
+            Admin
+          </Link>
+        </div>
+      )}
 
       {/* User footer */}
       <div style={{ padding: 12, borderTop: "1px solid var(--border)" }}>
@@ -129,6 +190,9 @@ export function Sidebar({ boards, user }: SidebarProps) {
         </a>
       </div>
     </div>
+
+    {searchOpen && <CommandPalette onClose={() => setSearchOpen(false)} />}
+    </>
   );
 }
 
@@ -179,6 +243,15 @@ function NewProjectButton() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth0 } from "@/lib/auth0";
+import { db } from "@/lib/db";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes
-  if (pathname === "/login" || pathname === "/suspended") {
+  if (pathname === "/login" || pathname === "/suspended" || pathname === "/maintenance") {
     return NextResponse.next();
   }
 
@@ -19,6 +20,21 @@ export async function middleware(request: NextRequest) {
   const session = await auth0.getSession(request as any);
   if (!session && !pathname.startsWith("/auth")) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
+  }
+
+  // Maintenance mode check (skip for admins and API routes)
+  if (session && !pathname.startsWith("/api") && !pathname.startsWith("/admin")) {
+    try {
+      const setting = await db.appSetting.findUnique({ where: { key: "maintenance_mode" } });
+      if (setting?.value === "true") {
+        const user = await db.user.findUnique({ where: { auth0Id: session.user.sub } });
+        if (!user?.isAdmin) {
+          return NextResponse.redirect(new URL("/maintenance", request.url));
+        }
+      }
+    } catch {
+      // DB not available — skip maintenance check
+    }
   }
 
   return authResponse;

@@ -143,6 +143,12 @@ model AuditLog {
   actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
 }
 
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 enum ColumnType {
   status
   priority

@@ -62,24 +62,24 @@ export async function GET() {
     }))
     .filter((b) => b.count > 0);
 
-  // Upcoming deadlines (next 7 days, not completed)
+  // Upcoming deadlines (next 14 days, not completed)
   const upcomingEnd = new Date(todayStart);
-  upcomingEnd.setDate(upcomingEnd.getDate() + 7);
+  upcomingEnd.setDate(upcomingEnd.getDate() + 14);
   upcomingEnd.setHours(23, 59, 59, 999);
   const upcomingDeadlines = allItems
     .filter(
       (i) =>
         !i.completedAt &&
-        i.scheduledDate &&
-        i.scheduledDate >= todayStart &&
-        i.scheduledDate <= upcomingEnd
+        i.deadline &&
+        i.deadline >= todayStart &&
+        i.deadline <= upcomingEnd
     )
-    .sort((a, b) => (a.scheduledDate! > b.scheduledDate! ? 1 : -1))
+    .sort((a, b) => (a.deadline! > b.deadline! ? 1 : -1))
     .slice(0, 8)
     .map((i) => ({
       id: i.id,
       name: i.name,
-      scheduledDate: i.scheduledDate!.toISOString(),
+      deadline: i.deadline!.toISOString(),
       boardName: i.group.board.name,
       boardColor: i.group.board.color,
       priority: i.priority ?? null,
@@ -172,6 +172,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
+    userName: me.name?.split(" ")[0] ?? null,
     doneThisWeek,
     openTasks,
     overdueTasks,

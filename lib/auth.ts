@@ -8,21 +8,43 @@ export async function getOrdoUser(): Promise<User | null> {
 
   const { sub, email, name, picture } = session.user;
 
-  const user = await db.user.upsert({
-    where: { auth0Id: sub },
-    update: {
-      email: email ?? "",
-      name: name ?? null,
-      picture: picture ?? null,
-      lastLoginAt: new Date(),
-    },
-    create: {
-      auth0Id: sub,
-      email: email ?? "",
-      name: name ?? null,
-      picture: picture ?? null,
-    },
-  });
+  // Try to find by auth0Id first, then fall back to email (for admin-created users)
+  let user = await db.user.findUnique({ where: { auth0Id: sub } });
+
+  if (user) {
+    user = await db.user.update({
+      where: { id: user.id },
+      data: {
+        email: email ?? user.email,
+        name: name ?? user.name,
+        picture: picture ?? user.picture,
+        lastLoginAt: new Date(),
+      },
+    });
+  } else {
+    // Check if admin pre-created this user by email
+    const preCreated = email ? await db.user.findUnique({ where: { email } }) : null;
+    if (preCreated) {
+      user = await db.user.update({
+        where: { id: preCreated.id },
+        data: {
+          auth0Id: sub,
+          name: name ?? preCreated.name,
+          picture: picture ?? preCreated.picture,
+          lastLoginAt: new Date(),
+        },
+      });
+    } else {
+      user = await db.user.create({
+        data: {
+          auth0Id: sub,
+          email: email ?? "",
+          name: name ?? null,
+          picture: picture ?? null,
+        },
+      });
+    }
+  }
 
   // Ensure inbox board + default group exist (created once on first login)
   const inbox = await db.board.findFirst({

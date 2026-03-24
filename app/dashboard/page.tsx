@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO, getWeek } from "date-fns";
+import { format, parseISO, getWeek, differenceInDays } from "date-fns";
 import Link from "next/link";
 import {
   BarChart,
@@ -14,6 +14,7 @@ import {
 import { useTheme } from "@/lib/theme";
 
 interface StatsData {
+  userName: string | null;
   doneThisWeek: number;
   openTasks: number;
   overdueTasks: number;
@@ -22,6 +23,14 @@ interface StatsData {
   todayCount: number;
   todayDoneCount: number;
   tasksByProject: { name: string; color: string; count: number }[];
+  upcomingDeadlines: {
+    id: string;
+    name: string;
+    deadline: string;
+    boardName: string;
+    boardColor: string | null;
+    priority: string | null;
+  }[];
   projectProgress: {
     id: string;
     name: string;
@@ -126,12 +135,12 @@ export default function DashboardPage() {
       <div className="px-5 py-4 flex items-center justify-between" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
         <div>
           <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>
-            {getGreeting()},{" "}
-            {data.todayAgenda.length > 0
-              ? `you have ${todayCount} task${todayCount !== 1 ? "s" : ""} planned for today`
-              : "nothing planned for today — add tasks in My Day"}
+            {getGreeting()}{data.userName ? `, ${data.userName}` : ""} —{" "}
+            {todayCount > 0
+              ? `${todayCount} task${todayCount !== 1 ? "s" : ""} planned for today`
+              : "nothing planned for today"}
             {overdueTasks > 0 && (
-              <span style={{ color: "var(--sys-red)" }}> and {overdueTasks} overdue</span>
+              <span style={{ color: "var(--sys-red)" }}>, {overdueTasks} overdue</span>
             )}
           </p>
           <p className="text-sm mt-0.5" style={{ color: "var(--text-3)" }}>
@@ -151,19 +160,17 @@ export default function DashboardPage() {
       {/* KPI row */}
       <div className="grid grid-cols-4 gap-4">
         <KpiCard value={doneThisWeek} label="Done this week" barColor="#22c55e"
-          barWidth={doneThisWeek > 0 ? Math.min(100, (doneThisWeek / Math.max(openTasks, 1)) * 100) : 0} />
+          barWidth={doneThisWeek > 0 ? Math.min(100, (doneThisWeek / Math.max(openTasks, 1)) * 100) : 0}
+          href="/done" />
         <KpiCard value={openTasks} label="Open tasks" barColor="var(--chart-primary)"
-          barWidth={openTasks > 0 ? Math.min(100, (openTasks / Math.max(openTasks + doneThisWeek, 1)) * 100) : 0} />
+          barWidth={openTasks > 0 ? Math.min(100, (openTasks / Math.max(openTasks + doneThisWeek, 1)) * 100) : 0}
+          href="/today" />
         <KpiCard value={overdueTasks}
           label={overdueTasks === 0 ? "No overdue tasks" : "Overdue"}
           barColor={overdueTasks === 0 ? "#22c55e" : "var(--sys-red)"}
           barWidth={overdueTasks === 0 ? 100 : Math.min(100, (overdueTasks / Math.max(openTasks, 1)) * 100)}
           valueColor={overdueTasks > 0 ? "var(--sys-red)" : undefined}
-          extra={overdueTasks > 0 ? (
-            <Link href="/today" className="text-[10px] transition-colors mt-0.5 block" style={{ color: "var(--sys-red)", opacity: 0.7 }}>
-              → Review now
-            </Link>
-          ) : null}
+          href={overdueTasks > 0 ? "/overdue" : undefined}
         />
         <KpiCard value={`${completionRate}%`} label="Completion rate" barColor="#a855f7"
           barWidth={completionRate} sub={`${todayDoneCount} done today`} />
@@ -280,21 +287,24 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
-          <h2 className="text-sm font-medium mb-4" style={{ color: "var(--text-2)" }}>Open tasks by project</h2>
-          {data.tasksByProject.length === 0 ? (
-            <p className="text-sm py-8 text-center" style={{ color: "var(--text-4)" }}>No open tasks</p>
+          <h2 className="text-sm font-medium mb-4" style={{ color: "var(--text-2)" }}>Upcoming deadlines</h2>
+          {data.upcomingDeadlines.length === 0 ? (
+            <p className="text-sm py-8 text-center" style={{ color: "var(--text-4)" }}>No deadlines in the next 14 days</p>
           ) : (
-            <div className="space-y-2.5 mt-2">
-              {data.tasksByProject.map((p) => {
-                const max = Math.max(...data.tasksByProject.map((x) => x.count));
+            <div className="space-y-2 mt-1">
+              {data.upcomingDeadlines.map((item) => {
+                const daysLeft = differenceInDays(parseISO(item.deadline), new Date());
+                const deadlineColor = daysLeft <= 1 ? "var(--sys-red)" : daysLeft <= 3 ? "var(--sys-orange)" : "var(--text-4)";
                 return (
-                  <div key={p.name} className="flex items-center gap-3">
-                    <span className="text-xs w-24 truncate shrink-0 text-right" style={{ color: "var(--text-3)" }}>{p.name}</span>
-                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
-                      <div className="h-full rounded-full transition-all"
-                        style={{ width: `${(p.count / max) * 100}%`, backgroundColor: p.color, opacity: 0.8 }} />
-                    </div>
-                    <span className="text-xs w-6 shrink-0" style={{ color: "var(--text-3)" }}>{p.count}</span>
+                  <div key={item.id} className="flex items-center gap-2.5 py-1">
+                    <span className="text-xs tabular-nums shrink-0 w-14 text-right font-medium" style={{ color: deadlineColor }}>
+                      {daysLeft === 0 ? "today" : daysLeft === 1 ? "tomorrow" : `${daysLeft}d`}
+                    </span>
+                    <span className="text-sm flex-1 truncate" style={{ color: "var(--text-2)" }}>{item.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0"
+                      style={{ backgroundColor: `${item.boardColor ?? "#6b7280"}20`, color: "var(--text-3)" }}>
+                      {item.boardName}
+                    </span>
                   </div>
                 );
               })}
@@ -307,7 +317,7 @@ export default function DashboardPage() {
 }
 
 function KpiCard({
-  value, label, sub, barColor, barWidth, valueColor, extra,
+  value, label, sub, barColor, barWidth, valueColor, href,
 }: {
   value: string | number;
   label: string;
@@ -315,21 +325,35 @@ function KpiCard({
   barColor: string;
   barWidth: number;
   valueColor?: string;
-  extra?: React.ReactNode;
+  href?: string;
 }) {
-  return (
-    <div className="p-4 relative overflow-hidden flex flex-col"
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
+  const inner = (
+    <>
       <p className="text-3xl font-semibold tracking-tight mt-1"
         style={{ color: valueColor ?? "var(--text-1)" }}>
         {value}
       </p>
       <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
       {sub && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-4)" }}>{sub}</p>}
-      {extra}
       <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: "var(--border)" }}>
         <div className="h-full transition-all" style={{ width: `${barWidth}%`, backgroundColor: barColor }} />
       </div>
+    </>
+  );
+
+  const cardStyle = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" };
+
+  if (href) {
+    return (
+      <Link href={href} className="p-4 relative overflow-hidden flex flex-col transition-opacity hover:opacity-80" style={cardStyle}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="p-4 relative overflow-hidden flex flex-col" style={cardStyle}>
+      {inner}
     </div>
   );
 }

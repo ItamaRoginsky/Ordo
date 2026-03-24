@@ -6,22 +6,14 @@ import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Trash2 } from "lucide-
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Group, Item, Column, ColumnValue } from "@prisma/client";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
   SortableContext,
   verticalListSortingStrategy,
-  arrayMove,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ColHeaders } from "./ColHeaders";
 import { ItemRow } from "./ItemRow";
+import { BOARD_ROW_GRID } from "@/lib/board-layout";
 
 type ItemWithValues = Item & { columnValues: ColumnValue[] };
 type GroupWithItems = Group & { items: ItemWithValues[] };
@@ -52,7 +44,7 @@ function SortableItemRow({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <ItemRow
         item={item}
         columns={columns}
@@ -60,7 +52,6 @@ function SortableItemRow({
         boardName={boardName}
         boardIcon={boardIcon}
         boardColor={boardColor}
-        dragHandleProps={listeners}
       />
     </div>
   );
@@ -98,28 +89,10 @@ export function GroupRow({
     setItems(group.items);
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
   function toggleCollapse() {
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem(storageKey, String(next));
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = items.findIndex((i) => i.id === active.id);
-    const newIndex = items.findIndex((i) => i.id === over.id);
-    const reordered = arrayMove(items, oldIndex, newIndex);
-    setItems(reordered);
-    fetch(`/api/groups/${group.id}/reorder`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemIds: reordered.map((i) => i.id) }),
-    }).then(() => {
-      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
-    });
   }
 
   const addItem = useMutation({
@@ -260,11 +233,11 @@ export function GroupRow({
 
       {/* Collapsible table */}
       <div
-        className="overflow-hidden transition-all duration-200 ease-out"
-        style={{ maxHeight: collapsed ? 0 : "9999px", opacity: collapsed ? 0 : 1 }}
+        className="transition-all duration-200 ease-out"
+        style={{ maxHeight: collapsed ? 0 : "9999px", opacity: collapsed ? 0 : 1, overflow: collapsed ? "hidden" : "visible" }}
       >
         <div
-          className="ml-4 rounded-xl overflow-hidden"
+          className="ml-4 rounded-xl"
           style={{
             background: "var(--bg-card)",
             border: "1px solid var(--border)",
@@ -276,25 +249,33 @@ export function GroupRow({
             {/* Left color accent bar */}
             <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: color }} />
             <div className="pl-[3px]">
-              <ColHeaders columns={columns} />
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                  {items.map((item) => (
-                    <SortableItemRow
-                      key={item.id}
-                      item={item}
-                      columns={columns}
-                      boardId={boardId}
-                      boardName={boardName}
-                      boardIcon={boardIcon}
-                      boardColor={boardColor}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-              {/* Add item row */}
+              <ColHeaders />
+              <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                {items.map((item) => (
+                  <SortableItemRow
+                    key={item.id}
+                    item={item}
+                    columns={columns}
+                    boardId={boardId}
+                    boardName={boardName}
+                    boardIcon={boardIcon}
+                    boardColor={boardColor}
+                  />
+                ))}
+              </SortableContext>
+              {/* Add item row — uses same BOARD_ROW_GRID so columns align perfectly */}
               {isAddingItem ? (
-                <div className="flex items-center gap-2 px-5 py-2" style={{ borderTop: "1px solid var(--border)" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: BOARD_ROW_GRID,
+                    alignItems: "center",
+                    height: 40,
+                    borderTop: "1px solid var(--border)",
+                    background: "var(--bg-hover)",
+                  }}
+                >
+                  <div />
                   <input
                     ref={addInputRef}
                     value={newItemName}
@@ -304,26 +285,49 @@ export function GroupRow({
                       if (e.key === "Escape") { setIsAddingItem(false); setNewItemName(""); }
                     }}
                     onBlur={submitItem}
-                    placeholder="Item name"
-                    className="flex-1 px-2 py-1 text-sm rounded-lg outline-none transition-all"
-                    style={{
-                      background: "var(--bg-input)",
-                      border: "1px solid var(--accent)",
-                      color: "var(--text-1)",
-                    }}
+                    placeholder="Item name…"
                     disabled={addItem.isPending}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      outline: "none",
+                      fontSize: 13,
+                      color: "var(--text-1)",
+                      fontFamily: "inherit",
+                      paddingLeft: 4,
+                      width: "100%",
+                    }}
                   />
+                  <div /><div /><div />
                 </div>
               ) : (
                 <div
                   onClick={openAddItem}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm cursor-pointer transition-colors"
-                  style={{ color: "var(--text-4)", borderTop: "1px solid var(--border)" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: BOARD_ROW_GRID,
+                    alignItems: "center",
+                    height: 36,
+                    borderTop: "1px solid var(--border)",
+                    cursor: "pointer",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
-                  <Plus size={13} />
-                  Add item
+                  <div />
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 12,
+                    color: "var(--text-4)",
+                    paddingLeft: 4,
+                  }}>
+                    <Plus size={13} />
+                    Add item
+                  </div>
+                  <div /><div /><div />
                 </div>
               )}
             </div>

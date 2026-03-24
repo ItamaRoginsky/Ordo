@@ -1,14 +1,46 @@
-import type { Column } from "@prisma/client";
+import { BOARD_ROW_GRID } from "@/lib/board-layout";
 
-export function ColHeaders({ columns }: { columns: Column[] }) {
+// ColHeaders must use BOARD_ROW_GRID so every column aligns with ItemRow.
+export function ColHeaders() {
   return (
-    <div className="flex items-center text-[10px] font-semibold uppercase tracking-widest select-none" style={{ background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)", color: "var(--text-4)" }}>
-      <div className="w-80 shrink-0 px-5 py-2.5">Name</div>
-      {columns.map((col) => (
-        <div key={col.id} className="w-36 shrink-0 px-3 py-2.5 text-center">
-          {col.name}
-        </div>
-      ))}
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: BOARD_ROW_GRID,
+        alignItems: "center",
+        height: 30,
+        background: "var(--bg-sidebar)",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      {/* check col — empty */}
+      <div />
+      {/* Task name */}
+      <div style={{
+        fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+        letterSpacing: "0.08em", color: "var(--text-4)",
+        paddingLeft: 4,
+      }}>
+        Task
+      </div>
+      {/* Status */}
+      <div style={{
+        fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+        letterSpacing: "0.08em", color: "var(--text-4)",
+        textAlign: "center",
+      }}>
+        Status
+      </div>
+      {/* Deadline */}
+      <div style={{
+        fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+        letterSpacing: "0.08em", color: "var(--text-4)",
+        textAlign: "center",
+      }}>
+        Deadline
+      </div>
+      {/* actions — empty */}
+      <div />
     </div>
   );
 }

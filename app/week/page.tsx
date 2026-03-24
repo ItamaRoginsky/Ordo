@@ -12,11 +12,23 @@ import {
   isPast,
   parseISO,
   isSameDay,
+  startOfDay,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { AddTaskModal, type NewTask } from "@/components/tasks/AddTaskModal";
 import { sortByPriority, PRIORITY_ORDER } from "@/components/tasks/PriorityDot";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+} from "@dnd-kit/core";
 
 interface WeekItem {
   id: string;
@@ -99,6 +111,39 @@ function ItemCard({
   );
 }
 
+function DroppableDay({ date, isOver, children }: { date: Date; isOver: boolean; children: React.ReactNode }) {
+  const dateStr = format(date, "yyyy-MM-dd");
+  const { setNodeRef } = useDroppable({ id: dateStr, data: { date } });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        flex: 1,
+        minHeight: 40,
+        borderRadius: 8,
+        background: isOver ? "var(--bg-hover)" : "transparent",
+        transition: "background 0.15s",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableWeekTask({ item, children }: { item: WeekItem; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{ opacity: isDragging ? 0.3 : 1, cursor: "grab", touchAction: "none" }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function DayColumn({
   date,
   items,
@@ -107,6 +152,7 @@ function DayColumn({
   onOpenDetail,
   projects,
   inboxBoard,
+  overDate,
 }: {
   date: Date;
   items: WeekItem[];
@@ -115,6 +161,7 @@ function DayColumn({
   onOpenDetail: (item: WeekItem) => void;
   projects: { id: string; name: string; color: string | null; icon: string | null }[];
   inboxBoard: { id: string; name: string } | null;
+  overDate: string | null;
 }) {
   const [showModal, setShowModal] = useState(false);
   const today = isToday(date);
@@ -154,6 +201,7 @@ function DayColumn({
 
       {/* Items */}
       <div className="flex-1 p-1.5 overflow-y-auto">
+        <DroppableDay date={date} isOver={overDate === format(date, "yyyy-MM-dd")}>
         {sortByPriority(items).map((item, idx, arr) => {
           const prevPriority = idx > 0 ? (arr[idx - 1].priority ?? "p4") : null;
           const thisPriority = item.priority ?? "p4";
@@ -162,10 +210,13 @@ function DayColumn({
           return (
             <div key={item.id}>
               {showDivider && <div className="mx-1 my-1 h-[1px]" style={{ background: "var(--border)" }} />}
-              <ItemCard item={item} onToggle={onToggle} onOpenDetail={onOpenDetail} />
+              <DraggableWeekTask item={item}>
+                <ItemCard item={item} onToggle={onToggle} onOpenDetail={onOpenDetail} />
+              </DraggableWeekTask>
             </div>
           );
         })}
+        </DroppableDay>
 
         {showModal ? (
           <div className="mt-1">
@@ -201,6 +252,48 @@ export default function WeekPage() {
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [detailItem, setDetailItem] = useState<WeekItem | null>(null);
+  const [overDate, setOverDate] = useState<string | null>(null);
+  const [draggingItem, setDraggingItem] = useState<WeekItem | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setDraggingItem(null);
+    setOverDate(null);
+    if (!over) return;
+
+    const newDate = over.data.current?.date as Date | undefined;
+    if (!newDate) return;
+
+    const itemId = active.id as string;
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    // Skip if same day
+    if (item.scheduledDate && isSameDay(parseISO(item.scheduledDate), newDate)) return;
+
+    const newScheduled = startOfDay(newDate).toISOString();
+    const isTodayDate = isToday(newDate);
+
+    // Optimistic update
+    queryClient.setQueryData(["week", startStr], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        items: old.items.map((i: WeekItem) =>
+          i.id === itemId ? { ...i, scheduledDate: newScheduled, isToday: isTodayDate } : i
+        ),
+      };
+    });
+
+    await fetch(`/api/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledDate: newScheduled, isToday: isTodayDate }),
+    });
+    queryClient.invalidateQueries({ queryKey: ["week", startStr] });
+  }
 
   const startStr = format(weekStart, "yyyy-MM-dd");
 
@@ -312,20 +405,36 @@ export default function WeekPage() {
           Loading…
         </div>
       ) : (
-        <div className="flex-1 grid grid-cols-7 gap-3 min-h-0">
-          {days.map((day) => (
-            <DayColumn
-              key={day.toISOString()}
-              date={day}
-              items={itemsForDay(day)}
-              onToggle={toggleItem}
-              onAddTask={addTask}
-              onOpenDetail={setDetailItem}
-              projects={projects}
-              inboxBoard={inboxBoard}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          onDragStart={(e: DragStartEvent) => setDraggingItem(items.find((i) => i.id === e.active.id) ?? null)}
+          onDragOver={(e) => setOverDate(e.over?.id as string ?? null)}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => { setDraggingItem(null); setOverDate(null); }}
+        >
+          <div className="flex-1 grid grid-cols-7 gap-3 min-h-0">
+            {days.map((day) => (
+              <DayColumn
+                key={day.toISOString()}
+                date={day}
+                items={itemsForDay(day)}
+                onToggle={toggleItem}
+                onAddTask={addTask}
+                onOpenDetail={setDetailItem}
+                projects={projects}
+                inboxBoard={inboxBoard}
+                overDate={overDate}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {draggingItem && (
+              <div style={{ opacity: 0.9, pointerEvents: "none" }}>
+                <ItemCard item={draggingItem} onToggle={() => {}} />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {detailItem && (
