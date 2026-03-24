@@ -22,34 +22,14 @@ export default function LoginPage() {
           boxShadow: "var(--card-shadow)",
         }}
       >
-        {/* Logo mark */}
-        <div
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 16,
-            background: "var(--text-1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 26,
-            fontWeight: 700,
-            color: "var(--bg-card)",
-            fontFamily: "Georgia, serif",
-            margin: "0 auto 20px",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          O
-        </div>
-
         <h1
           style={{
-            fontSize: 22,
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
+            fontSize: 32,
+            fontWeight: 700,
+            fontFamily: "'Gelasio', serif",
             color: "var(--text-1)",
             margin: "0 0 8px",
+            letterSpacing: "-0.01em",
           }}
         >
           Ordo

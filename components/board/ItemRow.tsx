@@ -99,7 +99,8 @@ export function ItemRow({
       <div className="flex items-center group transition-colors min-h-[40px]" style={{ borderBottom: "1px solid var(--border)" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
         {/* Drag handle */}
         <div
-          className="pl-2 pr-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab text-white/20 hover:text-white/50"
+          className="pl-2 pr-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab"
+          style={{ color: "var(--text-4)" }}
           {...(dragHandleProps as React.HTMLAttributes<HTMLDivElement>)}
         >
           <GripVertical size={13} />
@@ -146,14 +147,14 @@ export function ItemRow({
             )}
           </div>
 
-          {/* Deadline badge */}
           {deadlineDate && (
             <span
-              className={`text-[10px] shrink-0 px-1.5 py-0.5 rounded border ${
-                deadlineOverdue
-                  ? "text-red-400 border-red-500/40 bg-red-500/10"
-                  : "text-white/30 border-white/[0.1] bg-transparent"
-              }`}
+              className="text-[10px] shrink-0 px-1.5 py-0.5 rounded border"
+              style={{
+                color: deadlineOverdue ? "var(--sys-red)" : "var(--text-4)",
+                borderColor: deadlineOverdue ? "rgba(239,68,68,0.4)" : "var(--border)",
+                background: deadlineOverdue ? "rgba(239,68,68,0.1)" : "transparent",
+              }}
             >
               {format(deadlineDate, "MMM d")}
             </span>
@@ -178,10 +179,10 @@ export function ItemRow({
                   onSuccess={invalidate}
                 />
               ) : col.type === "checkbox" ? (
-                <input type="checkbox" checked={Boolean(val)} readOnly className="w-4 h-4 cursor-default accent-[#5b9cf6]" />
+                <input type="checkbox" checked={Boolean(val)} readOnly className="w-4 h-4 cursor-default" style={{ accentColor: "var(--chart-primary)" }} />
               ) : (
-                <span className="text-white/50 text-sm truncate">
-                  {val != null && val !== "" ? String(val) : <span className="text-white/15">—</span>}
+                <span className="text-sm truncate" style={{ color: "var(--text-3)" }}>
+                  {val != null && val !== "" ? String(val) : <span style={{ color: "var(--text-4)" }}>—</span>}
                 </span>
               )}
             </div>
@@ -192,7 +193,10 @@ export function ItemRow({
         <div className="px-2 ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <button className="p-1 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/70 transition-colors">
+              <button className="p-1 rounded transition-colors" style={{ color: "var(--text-4)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
+              >
                 <MoreHorizontal size={14} />
               </button>
             </DropdownMenu.Trigger>
@@ -203,8 +207,11 @@ export function ItemRow({
                 sideOffset={6}
               >
                 <DropdownMenu.Item
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-white/60 rounded-lg hover:bg-white/[0.06] cursor-pointer outline-none transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg cursor-pointer outline-none transition-colors"
+                  style={{ color: "var(--text-2)" }}
                   onSelect={() => setDetailOpen(true)}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
                   Open detail
                 </DropdownMenu.Item>

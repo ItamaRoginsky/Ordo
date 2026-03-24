@@ -12,13 +12,13 @@ export default async function BoardsPage() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-xl font-semibold text-white/90 tracking-tight">My Projects</h1>
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>My Projects</h1>
         <CreateBoardButton />
       </div>
 
       {boards.length === 0 ? (
         <div className="text-center py-24">
-          <p className="text-white/25 text-sm mb-4">No projects yet</p>
+          <p className="text-sm mb-4" style={{ color: "var(--text-4)" }}>No projects yet</p>
           <CreateBoardButton />
         </div>
       ) : (
@@ -27,10 +27,13 @@ export default async function BoardsPage() {
             <Link
               key={board.id}
               href={`/boards/${board.id}`}
-              className="flex items-center gap-3 p-4 bg-[#1c1c1c] rounded-xl border border-white/[0.07] hover:border-white/[0.14] hover:bg-[#222222] transition-all"
+              className="flex items-center gap-3 p-4 rounded-xl transition-all"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)", borderRadius: "var(--radius-card)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-strong)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}
             >
               <span className="text-xl">{board.icon ?? "📋"}</span>
-              <span className="font-medium text-white/80 text-sm truncate">{board.name}</span>
+              <span className="font-medium text-sm truncate" style={{ color: "var(--text-2)" }}>{board.name}</span>
             </Link>
           ))}
         </div>

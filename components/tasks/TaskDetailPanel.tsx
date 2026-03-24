@@ -264,7 +264,11 @@ export function TaskDetailPanel({
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 text-[11px] text-white/45 cursor-pointer hover:bg-white/[0.08] hover:text-white/70 transition-colors">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] cursor-pointer transition-colors"
+          style={{ background: "var(--bg-active)", color: "var(--text-3)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
+        >
           <div
             className="w-2 h-2 rounded-sm flex-shrink-0"
             style={{ background: item.group.board.color ?? "#5b9cf6" }}
@@ -273,8 +277,8 @@ export function TaskDetailPanel({
         </div>
         {item.group.name && (
           <>
-            <span className="text-white/20 text-xs">/</span>
-            <span className="text-[11px] text-white/30">{item.group.name}</span>
+            <span className="text-xs" style={{ color: "var(--text-4)" }}>/</span>
+            <span className="text-[11px]" style={{ color: "var(--text-4)" }}>{item.group.name}</span>
           </>
         )}
 
@@ -319,15 +323,18 @@ export function TaskDetailPanel({
                           onUpdate(item.id, { priority: key === "p4" ? null : key });
                           setPriorityOpen(false);
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-colors text-left"
+                        style={{ color: "var(--text-2)" }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                       >
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: col.text }}
                         />
-                        <span className="text-sm text-white/70">{label}</span>
+                        <span className="text-sm">{label}</span>
                         {(item.priority ?? "p4") === key && (
-                          <span className="ml-auto text-[#5b9cf6] text-xs">✓</span>
+                          <span className="ml-auto text-xs" style={{ color: "var(--chart-primary)" }}>✓</span>
                         )}
                       </button>
                     );
@@ -369,21 +376,21 @@ export function TaskDetailPanel({
                 Subtasks
               </span>
               {totalSubtasks > 0 && (
-                <span className="text-[9px] text-white/20">
+                <span className="text-[9px]" style={{ color: "var(--text-4)" }}>
                   {doneSubtasks}/{totalSubtasks}
                 </span>
               )}
-              <div className="flex-1 h-px bg-white/[0.06]" />
+              <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
             </div>
 
             {item.subItems.map((sub) => (
               <div key={sub.id} className="flex items-center gap-2 py-1.5 group cursor-pointer">
                 <button
-                  className="w-3.5 h-3.5 rounded-full border border-white/20 flex-shrink-0 flex items-center justify-center hover:border-white/50 transition-colors"
+                  className="w-3.5 h-3.5 rounded-full flex-shrink-0 flex items-center justify-center transition-colors"
                   style={
                     sub.completedAt
-                      ? { background: "#3B6D11", borderColor: "#3B6D11" }
-                      : {}
+                      ? { background: "#3B6D11", borderColor: "#3B6D11", border: "1px solid #3B6D11" }
+                      : { border: "1px solid var(--border-strong)" }
                   }
                   onClick={() =>
                     onUpdate(sub.id, {
@@ -436,14 +443,14 @@ export function TaskDetailPanel({
               <span className="text-[9px] font-semibold uppercase tracking-[0.1em]" style={{ color: "var(--text-4)" }}>
                 Comments
               </span>
-              <div className="flex-1 h-px bg-white/[0.06]" />
+              <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
             </div>
 
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-2.5 mb-3">
                 <div
                   className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[9px] font-semibold text-white"
-                  style={{ background: "#5b9cf6" }}
+                  style={{ background: "var(--chart-primary)" }}
                 >
                   {comment.author?.name?.[0] ?? "U"}
                 </div>
@@ -464,7 +471,7 @@ export function TaskDetailPanel({
             <div className="flex gap-2.5 items-start">
               <div
                 className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center text-[9px] font-semibold text-white"
-                style={{ background: "#5b9cf6" }}
+                style={{ background: "var(--chart-primary)" }}
               >
                 U
               </div>
@@ -503,11 +510,11 @@ export function TaskDetailPanel({
                 🚩 {PRIORITY_LABELS[item.priority]}
               </span>
             ) : (
-              <span className="text-white/25">No priority</span>
+              <span style={{ color: "var(--text-4)" }}>No priority</span>
             )}
           </PropRow>
 
-          <div className="h-px bg-white/[0.06] my-1" />
+          <div className="h-px my-1" style={{ background: "var(--border)" }} />
 
           {/* Scheduled date */}
           <PropRow
@@ -519,7 +526,7 @@ export function TaskDetailPanel({
             }}
           />
 
-          <div className="h-px bg-white/[0.06] my-1" />
+          <div className="h-px my-1" style={{ background: "var(--border)" }} />
 
           {/* Deadline */}
           <PropRow
@@ -535,7 +542,7 @@ export function TaskDetailPanel({
             {deadlineDate ? (
               <span
                 className="flex items-center gap-1.5"
-                style={{ color: deadlineOverdue ? "#f87171" : "rgba(255,255,255,0.65)" }}
+                style={{ color: deadlineOverdue ? "var(--sys-red)" : "var(--text-2)" }}
               >
                 {format(deadlineDate, "MMM d, yyyy")}
                 {deadlineOverdue && (
@@ -545,11 +552,11 @@ export function TaskDetailPanel({
                 )}
               </span>
             ) : (
-              <span className="text-white/25">Set deadline</span>
+              <span style={{ color: "var(--text-4)" }}>Set deadline</span>
             )}
           </PropRow>
 
-          <div className="h-px bg-white/[0.06] my-1" />
+          <div className="h-px my-1" style={{ background: "var(--border)" }} />
 
           {/* Category */}
           <CategoryPropRow
@@ -560,12 +567,12 @@ export function TaskDetailPanel({
           {/* Custom fields */}
           {customFields.length > 0 && (
             <>
-              <div className="h-px bg-white/[0.06] my-1" />
+              <div className="h-px my-1" style={{ background: "var(--border)" }} />
               {customFields.map((field) => {
                 const val = getCustomValue(field.id);
                 return (
                   <div key={field.id} className="mb-4">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-white/25 mb-1.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.08em] mb-1.5" style={{ color: "var(--text-4)" }}>
                       {field.name}
                     </p>
                     <CustomFieldEditor
@@ -582,7 +589,7 @@ export function TaskDetailPanel({
           {/* Add custom field */}
           {onAddCustomField && (
             <>
-              <div className="h-px bg-white/[0.06] my-1" />
+              <div className="h-px my-1" style={{ background: "var(--border)" }} />
               {showAddField ? (
                 <div className="space-y-2 mt-2">
                   <input
@@ -632,7 +639,8 @@ export function TaskDetailPanel({
               ) : (
                 <button
                   onClick={() => setShowAddField(true)}
-                  className="flex items-center gap-1.5 text-[11px] text-[#5b9cf6]/70 hover:text-[#5b9cf6] mt-2 transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] mt-2 transition-colors"
+                  style={{ color: "var(--chart-primary)", opacity: 0.7 }}
                 >
                   <span className="text-base leading-none">+</span> Add field
                 </button>
@@ -641,7 +649,7 @@ export function TaskDetailPanel({
           )}
 
           {/* Timestamps */}
-          <div className="h-px bg-white/[0.06] my-3" />
+          <div className="h-px my-3" style={{ background: "var(--border)" }} />
           <div className="space-y-1">
             {item.createdAt && (
               <p className="text-[9px]" style={{ color: "var(--text-4)" }}>
@@ -694,7 +702,7 @@ function CategoryPropRow({
 
   return (
     <div className="mb-4">
-      <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-white/25 mb-1.5">
+      <p className="text-[9px] font-semibold uppercase tracking-[0.08em] mb-1.5" style={{ color: "var(--text-4)" }}>
         Category
       </p>
       {editing ? (
@@ -713,13 +721,16 @@ function CategoryPropRow({
       ) : value ? (
         <button
           onClick={() => { setDraft(value); setEditing(true); }}
-          className="flex items-center gap-1.5 text-[11px] w-full text-left px-1.5 py-1 rounded-md -mx-1.5 hover:bg-white/5 transition-colors"
+          className="flex items-center gap-1.5 text-[11px] w-full text-left px-1.5 py-1 rounded-md -mx-1.5 transition-colors"
+          style={{ color: "var(--text-3)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <span
             className="px-2 py-0.5 rounded-full text-[10px] font-medium border"
             style={{
               background: "rgba(91,156,246,0.1)",
-              color: "#5b9cf6",
+              color: "var(--chart-primary)",
               borderColor: "rgba(91,156,246,0.25)",
             }}
           >
@@ -729,7 +740,10 @@ function CategoryPropRow({
       ) : (
         <button
           onClick={() => { setDraft(""); setEditing(true); }}
-          className="flex items-center gap-1.5 text-[11px] w-full text-left px-1.5 py-1 rounded-md -mx-1.5 hover:bg-white/5 transition-colors text-white/25"
+          className="flex items-center gap-1.5 text-[11px] w-full text-left px-1.5 py-1 rounded-md -mx-1.5 transition-colors"
+          style={{ color: "var(--text-4)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           Add category
         </button>
@@ -763,7 +777,7 @@ function CustomFieldEditor({
         type="checkbox"
         checked={Boolean(value)}
         onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded accent-[#5b9cf6] cursor-pointer"
+        className="w-4 h-4 rounded cursor-pointer" style={{ accentColor: "var(--chart-primary)" }}
       />
     );
   }
@@ -775,14 +789,16 @@ function CustomFieldEditor({
           href={String(value)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] text-[#5b9cf6] hover:underline truncate flex items-center gap-1"
+          className="text-[11px] hover:underline truncate flex items-center gap-1"
+          style={{ color: "var(--chart-primary)" }}
         >
           <ExternalLink size={10} />
           {String(value).replace(/^https?:\/\//, "").slice(0, 20)}…
         </a>
         <button
           onClick={() => { setDraft(String(value)); setEditing(true); }}
-          className="text-white/20 hover:text-white/50 transition-colors"
+          className="transition-colors"
+          style={{ color: "var(--text-4)" }}
         >
           <MoreHorizontal size={10} />
         </button>

@@ -129,7 +129,7 @@ export default function DashboardPage() {
             {getGreeting()},{" "}
             {data.todayAgenda.length > 0
               ? `you have ${todayCount} task${todayCount !== 1 ? "s" : ""} planned for today`
-              : "nothing planned for today — add tasks in My Day ☀️"}
+              : "nothing planned for today — add tasks in My Day"}
             {overdueTasks > 0 && (
               <span style={{ color: "var(--sys-red)" }}> and {overdueTasks} overdue</span>
             )}
@@ -142,7 +142,7 @@ export default function DashboardPage() {
           <p className="text-xs" style={{ color: "var(--text-4)" }}>Week {weekNum}</p>
           {streak > 0 && (
             <p className="text-sm font-medium mt-0.5 text-[#f59e0b]">
-              🔥 {streak} day streak
+              {streak} day streak
             </p>
           )}
         </div>
@@ -150,12 +150,12 @@ export default function DashboardPage() {
 
       {/* KPI row */}
       <div className="grid grid-cols-4 gap-4">
-        <KpiCard emoji="✅" value={doneThisWeek} label="Done this week" barColor="#22c55e"
+        <KpiCard value={doneThisWeek} label="Done this week" barColor="#22c55e"
           barWidth={doneThisWeek > 0 ? Math.min(100, (doneThisWeek / Math.max(openTasks, 1)) * 100) : 0} />
-        <KpiCard emoji="📋" value={openTasks} label="Open tasks" barColor="var(--chart-primary)"
+        <KpiCard value={openTasks} label="Open tasks" barColor="var(--chart-primary)"
           barWidth={openTasks > 0 ? Math.min(100, (openTasks / Math.max(openTasks + doneThisWeek, 1)) * 100) : 0} />
-        <KpiCard emoji="⚠️" value={overdueTasks}
-          label={overdueTasks === 0 ? "No overdue tasks 🎉" : "Overdue"}
+        <KpiCard value={overdueTasks}
+          label={overdueTasks === 0 ? "No overdue tasks" : "Overdue"}
           barColor={overdueTasks === 0 ? "#22c55e" : "var(--sys-red)"}
           barWidth={overdueTasks === 0 ? 100 : Math.min(100, (overdueTasks / Math.max(openTasks, 1)) * 100)}
           valueColor={overdueTasks > 0 ? "var(--sys-red)" : undefined}
@@ -165,7 +165,7 @@ export default function DashboardPage() {
             </Link>
           ) : null}
         />
-        <KpiCard emoji="📈" value={`${completionRate}%`} label="Completion rate" barColor="#a855f7"
+        <KpiCard value={`${completionRate}%`} label="Completion rate" barColor="#a855f7"
           barWidth={completionRate} sub={`${todayDoneCount} done today`} />
       </div>
 
@@ -307,9 +307,8 @@ export default function DashboardPage() {
 }
 
 function KpiCard({
-  emoji, value, label, sub, barColor, barWidth, valueColor, extra,
+  value, label, sub, barColor, barWidth, valueColor, extra,
 }: {
-  emoji: string;
   value: string | number;
   label: string;
   sub?: string;
@@ -321,7 +320,6 @@ function KpiCard({
   return (
     <div className="p-4 relative overflow-hidden flex flex-col"
       style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
-      <div className="text-lg absolute top-3 right-3 opacity-50">{emoji}</div>
       <p className="text-3xl font-semibold tracking-tight mt-1"
         style={{ color: valueColor ?? "var(--text-1)" }}>
         {value}

@@ -60,15 +60,18 @@ function ItemCard({
 
   return (
     <div
-      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg hover:bg-white/[0.04] group cursor-pointer transition-colors border-l-2 ${
+      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg group cursor-pointer transition-colors border-l-2 ${
         overdue ? "border-red-500/60" : "border-transparent"
       }`}
       onClick={() => onOpenDetail ? onOpenDetail(item) : onToggle(item)}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
     >
       <div
         className={`mt-0.5 w-3 h-3 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-          done ? "border-[#22c55e] bg-[#22c55e]" : "border-white/20 group-hover:border-[#22c55e]"
+          done ? "border-[#22c55e] bg-[#22c55e]" : "group-hover:border-[#22c55e]"
         }`}
+        style={!done ? { borderColor: "var(--border-strong)" } : undefined}
       >
         {done && <span className="text-white text-[7px] font-bold">✓</span>}
       </div>
@@ -158,7 +161,7 @@ function DayColumn({
             PRIORITY_ORDER[prevPriority!] !== undefined;
           return (
             <div key={item.id}>
-              {showDivider && <div className="mx-1 my-1 h-[1px] bg-white/[0.05]" />}
+              {showDivider && <div className="mx-1 my-1 h-[1px]" style={{ background: "var(--border)" }} />}
               <ItemCard item={item} onToggle={onToggle} onOpenDetail={onOpenDetail} />
             </div>
           );
@@ -263,7 +266,7 @@ export default function WeekPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Calendar size={20} className="text-[#5b9cf6]" />
+          <Calendar size={20} style={{ color: "var(--chart-primary)" }} />
           <div>
             <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>My Week</h1>
             <p className="text-sm" style={{ color: "var(--text-3)" }}>
@@ -275,20 +278,29 @@ export default function WeekPage() {
           {!isCurrentWeek && (
             <button
               onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-              className="text-xs text-white/40 hover:text-white/70 px-2.5 py-1 rounded-lg hover:bg-white/[0.06] transition-colors mr-1"
+              className="text-xs px-2.5 py-1 rounded-lg transition-colors mr-1"
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               Today
             </button>
           )}
           <button
             onClick={() => setWeekStart(subWeeks(weekStart, 1))}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/40 hover:text-white/70 transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: "var(--text-3)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           >
             <ChevronLeft size={16} />
           </button>
           <button
             onClick={() => setWeekStart(addWeeks(weekStart, 1))}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/40 hover:text-white/70 transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: "var(--text-3)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           >
             <ChevronRight size={16} />
           </button>
@@ -296,7 +308,7 @@ export default function WeekPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex-1 flex items-center justify-center text-white/25 text-sm">
+        <div className="flex-1 flex items-center justify-center text-sm" style={{ color: "var(--text-4)" }}>
           Loading…
         </div>
       ) : (
@@ -322,8 +334,9 @@ export default function WeekPage() {
             ...detailItem,
             description: null,
             deadline: null,
+            category: null,
             subItems: [],
-            group: detailItem.group,
+            group: { ...detailItem.group, board: { ...detailItem.group.board, icon: null } },
           }}
           onClose={() => setDetailItem(null)}
           onUpdate={async (id, patch) => {

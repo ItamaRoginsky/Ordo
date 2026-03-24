@@ -62,7 +62,7 @@ const PRIORITY_CONFIG = {
 };
 
 function SideLabel({ label }: { label: string }) {
-  return <p className="text-[10px] uppercase tracking-widest text-white/25 mb-1">{label}</p>;
+  return <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "var(--text-4)" }}>{label}</p>;
 }
 
 export function TaskDetailModal({
@@ -147,18 +147,20 @@ export function TaskDetailModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+        className="fixed inset-0 z-40 backdrop-blur-sm"
+        style={{ background: "rgba(0,0,0,0.6)" }}
         onClick={onClose}
       />
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-[#1a1a1a] border border-white/[0.09] rounded-2xl shadow-2xl w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden"
+          className="rounded-2xl shadow-2xl w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.07] shrink-0">
-            <span className="text-xs text-white/35 flex items-center gap-1.5">
+          <div className="flex items-center gap-2 px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+            <span className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
               <span>{item.group.board.icon ?? "📋"}</span>
               <span>{item.group.board.name}</span>
             </span>
@@ -166,14 +168,20 @@ export function TaskDetailModal({
             {onDelete && (
               <button
                 onClick={() => { onDelete(item.id); onClose(); }}
-                className="p-1.5 rounded-lg text-white/25 hover:text-red-400 hover:bg-white/[0.06] transition-colors"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: "var(--text-4)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
               >
                 <MoreHorizontal size={14} />
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: "var(--text-4)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               <X size={15} />
             </button>
@@ -182,7 +190,7 @@ export function TaskDetailModal({
           {/* Body */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
             {/* Left */}
-            <div className="flex-1 px-5 py-5 overflow-y-auto border-r border-white/[0.05] min-w-0">
+            <div className="flex-1 px-5 py-5 overflow-y-auto min-w-0" style={{ borderRight: "1px solid var(--border)" }}>
               {/* Name + completion */}
               <div className="flex items-start gap-3 mb-4">
                 <button
@@ -194,8 +202,9 @@ export function TaskDetailModal({
                   className={`mt-1 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
                     item.completedAt
                       ? "bg-[#22c55e] border-[#22c55e]"
-                      : "border-white/25 hover:border-[#22c55e]"
+                      : "hover:border-[#22c55e]"
                   }`}
+                  style={!item.completedAt ? { borderColor: "var(--border-strong)" } : undefined}
                 >
                   {item.completedAt && (
                     <span className="text-white text-[9px] font-bold">✓</span>
@@ -208,9 +217,11 @@ export function TaskDetailModal({
                     const n = e.currentTarget.textContent?.trim() ?? "";
                     if (n && n !== item.name) onUpdate(item.id, { name: n });
                   }}
-                  className={`flex-1 text-lg font-medium outline-none text-white/90 leading-snug cursor-text rounded px-1 -mx-1 focus:bg-white/[0.03] transition-colors ${
-                    item.completedAt ? "line-through text-white/35" : ""
-                  }`}
+                  className="flex-1 text-lg font-medium outline-none leading-snug cursor-text rounded px-1 -mx-1 transition-colors"
+                  style={{
+                    color: item.completedAt ? "var(--text-4)" : "var(--text-1)",
+                    textDecoration: item.completedAt ? "line-through" : "none",
+                  }}
                 >
                   {item.name}
                 </div>
@@ -224,17 +235,19 @@ export function TaskDetailModal({
                   onBlur={saveDescription}
                   placeholder="Add a description…"
                   rows={3}
-                  className="w-full text-sm text-white/55 bg-transparent resize-none outline-none placeholder:text-white/20 leading-relaxed pointer-events-auto"
+                  className="w-full text-sm bg-transparent resize-none outline-none leading-relaxed pointer-events-auto"
+                  style={{ color: "var(--text-3)", }}
                 />
               </div>
 
               {/* Subtasks */}
               <div className="mb-5">
-                <p className="text-[10px] uppercase tracking-widest text-white/25 mb-2">Subtasks</p>
+                <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "var(--text-4)" }}>Subtasks</p>
                 {item.subItems.map((sub) => (
                   <div
                     key={sub.id}
-                    className="flex items-center gap-2.5 py-1.5 border-b border-white/[0.04]"
+                    className="flex items-center gap-2.5 py-1.5"
+                    style={{ borderBottom: "1px solid var(--border)" }}
                   >
                     <button
                       onClick={() =>
@@ -243,17 +256,20 @@ export function TaskDetailModal({
                         })
                       }
                       className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        sub.completedAt ? "bg-[#22c55e] border-[#22c55e]" : "border-white/25"
+                        sub.completedAt ? "bg-[#22c55e] border-[#22c55e]" : ""
                       }`}
+                      style={!sub.completedAt ? { borderColor: "var(--border-strong)" } : undefined}
                     >
                       {sub.completedAt && (
                         <span className="text-white text-[8px] font-bold">✓</span>
                       )}
                     </button>
                     <span
-                      className={`text-sm flex-1 ${
-                        sub.completedAt ? "line-through text-white/25" : "text-white/70"
-                      }`}
+                      className="text-sm flex-1"
+                      style={{
+                        color: sub.completedAt ? "var(--text-4)" : "var(--text-2)",
+                        textDecoration: sub.completedAt ? "line-through" : "none",
+                      }}
                     >
                       {sub.name}
                     </span>
@@ -273,12 +289,16 @@ export function TaskDetailModal({
                       }
                     }}
                     placeholder="Subtask name…"
-                    className="w-full text-sm bg-white/[0.05] border border-[#5b9cf6]/30 rounded-lg px-3 py-1.5 text-white/75 placeholder:text-white/20 outline-none mt-1"
+                    className="w-full text-sm rounded-lg px-3 py-1.5 outline-none mt-1"
+                    style={{ background: "var(--bg-input)", border: "1px solid var(--accent)", color: "var(--text-1)" }}
                   />
                 ) : (
                   <button
                     onClick={() => setAddingSubtask(true)}
-                    className="flex items-center gap-1.5 text-xs text-white/25 hover:text-white/55 transition-colors mt-1"
+                    className="flex items-center gap-1.5 text-xs transition-colors mt-1"
+                    style={{ color: "var(--text-4)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
                   >
                     <Plus size={11} />
                     Add subtask
@@ -288,15 +308,15 @@ export function TaskDetailModal({
 
               {/* Comments */}
               <div>
-                <p className="text-[10px] uppercase tracking-widest text-white/25 mb-2">Comments</p>
+                <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "var(--text-4)" }}>Comments</p>
                 {comments.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {comments.map((c) => (
                       <div key={c.id} className="flex items-start gap-2.5">
-                        <div className="w-6 h-6 rounded-full bg-[#5b9cf6]/40 shrink-0 mt-0.5" />
-                        <div className="flex-1 bg-white/[0.04] rounded-lg px-3 py-2">
-                          <p className="text-sm text-white/70">{c.text}</p>
-                          <p className="text-[10px] text-white/20 mt-1">
+                        <div className="w-6 h-6 rounded-full shrink-0 mt-0.5" style={{ background: "rgba(91,156,246,0.4)" }} />
+                        <div className="flex-1 rounded-lg px-3 py-2" style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+                          <p className="text-sm" style={{ color: "var(--text-2)" }}>{c.text}</p>
+                          <p className="text-[10px] mt-1" style={{ color: "var(--text-4)" }}>
                             {format(parseISO(c.createdAt), "MMM d, h:mm a")}
                           </p>
                         </div>
@@ -305,7 +325,7 @@ export function TaskDetailModal({
                   </div>
                 )}
                 <div className="flex items-end gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-[#5b9cf6]/40 shrink-0 mb-0.5" />
+                  <div className="w-6 h-6 rounded-full shrink-0 mb-0.5" style={{ background: "rgba(91,156,246,0.4)" }} />
                   <div className="flex-1 relative">
                     <textarea
                       value={commentText}
@@ -318,13 +338,15 @@ export function TaskDetailModal({
                       }}
                       placeholder="Write a comment… (Enter to send)"
                       rows={2}
-                      className="w-full text-sm bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 pr-9 text-white/60 placeholder:text-white/20 outline-none focus:border-white/[0.12] transition-colors resize-none pointer-events-auto"
+                      className="w-full text-sm rounded-lg px-3 py-1.5 pr-9 outline-none transition-colors resize-none pointer-events-auto"
+                      style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-2)" }}
                     />
                     {commentText.trim() && (
                       <button
                         onClick={submitComment}
                         disabled={submittingComment}
-                        className="absolute right-2 bottom-2 p-1 rounded text-[#5b9cf6] hover:text-[#4a8de8] transition-colors disabled:opacity-40"
+                        className="absolute right-2 bottom-2 p-1 rounded transition-colors disabled:opacity-40"
+                        style={{ color: "var(--chart-primary)" }}
                       >
                         <Send size={13} />
                       </button>
@@ -339,7 +361,7 @@ export function TaskDetailModal({
               {/* Project */}
               <div>
                 <SideLabel label="Project" />
-                <span className="flex items-center gap-1.5 text-sm text-white/60">
+                <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-2)" }}>
                   <span>{item.group.board.icon ?? "📋"}</span>
                   <span>{item.group.board.name}</span>
                 </span>
@@ -350,12 +372,13 @@ export function TaskDetailModal({
                 <SideLabel label="Date" />
                 {item.scheduledDate ? (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-white/70">
+                    <span className="text-sm" style={{ color: "var(--text-2)" }}>
                       {format(parseISO(item.scheduledDate), "MMM d")}
                     </span>
                     <button
                       onClick={() => onUpdate(item.id, { scheduledDate: null })}
-                      className="text-white/20 hover:text-white/50 transition-colors"
+                      className="transition-colors"
+                      style={{ color: "var(--text-4)" }}
                     >
                       <X size={11} />
                     </button>
@@ -363,7 +386,8 @@ export function TaskDetailModal({
                 ) : (
                   <button
                     onClick={() => onUpdate(item.id, { scheduledDate: new Date().toISOString() })}
-                    className="text-sm text-white/25 hover:text-white/60 transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: "var(--text-4)" }}
                   >
                     Set date
                   </button>
@@ -375,12 +399,13 @@ export function TaskDetailModal({
                 <SideLabel label="Deadline" />
                 {item.deadline ? (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-white/70">
+                    <span className="text-sm" style={{ color: "var(--text-2)" }}>
                       {format(parseISO(item.deadline), "MMM d")}
                     </span>
                     <button
                       onClick={() => onUpdate(item.id, { deadline: null })}
-                      className="text-white/20 hover:text-white/50 transition-colors"
+                      className="transition-colors"
+                      style={{ color: "var(--text-4)" }}
                     >
                       <X size={11} />
                     </button>
@@ -392,7 +417,8 @@ export function TaskDetailModal({
                       d.setDate(d.getDate() + 7);
                       onUpdate(item.id, { deadline: d.toISOString() });
                     }}
-                    className="text-sm text-white/25 hover:text-white/60 transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: "var(--text-4)" }}
                   >
                     Set deadline
                   </button>
@@ -404,7 +430,9 @@ export function TaskDetailModal({
                 <SideLabel label="Priority" />
                 <Popover.Root>
                   <Popover.Trigger asChild>
-                    <button className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white/90 transition-colors">
+                    <button className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: "var(--text-2)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}>
                       <span
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{
@@ -419,7 +447,8 @@ export function TaskDetailModal({
                   </Popover.Trigger>
                   <Popover.Portal>
                     <Popover.Content
-                      className="bg-[#252525] border border-white/[0.09] rounded-xl shadow-2xl z-[60] p-1.5 w-44"
+                      className="rounded-xl shadow-2xl z-[60] p-1.5 w-44"
+                      style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
                       sideOffset={6}
                     >
                       {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
@@ -428,15 +457,18 @@ export function TaskDetailModal({
                           onClick={() =>
                             onUpdate(item.id, { priority: key === "p4" ? null : key })
                           }
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                          style={{ color: "var(--text-2)" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         >
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: cfg.color }}
                           />
-                          <span className="text-sm text-white/70">{cfg.label}</span>
+                          <span className="text-sm">{cfg.label}</span>
                           {(item.priority ?? "p4") === key && (
-                            <span className="ml-auto text-[#5b9cf6] text-xs">✓</span>
+                            <span className="ml-auto text-xs" style={{ color: "var(--chart-primary)" }}>✓</span>
                           )}
                         </button>
                       ))}
@@ -465,15 +497,16 @@ export function TaskDetailModal({
                             href={String(val)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-[#5b9cf6] hover:underline flex items-center gap-1"
+                            className="text-sm flex items-center gap-1"
+                            style={{ color: "var(--chart-primary)" }}
                           >
                             <ExternalLink size={11} />
                             {String(val).replace(/^https?:\/\//, "").slice(0, 20)}…
                           </a>
                         ) : (
-                          <span className="text-sm text-white/60">
+                          <span className="text-sm" style={{ color: "var(--text-2)" }}>
                             {val != null ? String(val) : (
-                              <span className="text-white/20">—</span>
+                              <span style={{ color: "var(--text-4)" }}>—</span>
                             )}
                           </span>
                         )}

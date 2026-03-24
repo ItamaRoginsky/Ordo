@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Board, User } from "@prisma/client";
 import { useTheme } from "@/lib/theme";
 
+
 const DOT_COLORS = [
   "#5b9cf6", "#34d399", "#f59e0b", "#f87171", "#a78bfa",
   "#38bdf8", "#fb923c", "#e879f9",
@@ -38,19 +39,8 @@ export function Sidebar({ boards, user }: SidebarProps) {
       }}
     >
       {/* Logo */}
-      <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 24, height: 24, borderRadius: 7,
-          background: "var(--text-1)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 13, fontWeight: 700,
-          color: "var(--bg-card)",
-          fontFamily: "serif",
-          flexShrink: 0,
-        }}>
-          O
-        </div>
-        <span style={{ fontWeight: 600, color: "var(--text-1)", fontSize: 15, letterSpacing: "-0.02em" }}>
+      <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid var(--border)" }}>
+        <span style={{ fontWeight: 700, color: "var(--text-1)", fontSize: 17, letterSpacing: "-0.01em", fontFamily: "'Gelasio', serif" }}>
           Ordo
         </span>
       </div>

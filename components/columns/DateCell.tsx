@@ -5,6 +5,8 @@ import { format, isToday, isPast, parseISO } from "date-fns";
 import { AlertTriangle } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 
+import { useTheme } from "@/lib/theme";
+
 interface DateCellProps {
   value: string | null;       // ISO date string
   itemId: string;
@@ -16,6 +18,8 @@ interface DateCellProps {
 export function DateCell({ value, itemId, columnId, completedAt, onSuccess }: DateCellProps) {
   const [localValue, setLocalValue] = useState(value);
   const [open, setOpen] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   const date = localValue ? parseISO(localValue) : null;
   const isOverdue = date && !completedAt && isPast(date) && !isToday(date);
@@ -48,23 +52,25 @@ export function DateCell({ value, itemId, columnId, completedAt, onSuccess }: Da
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button className="flex items-center justify-center gap-1 px-2 py-1 rounded-md hover:bg-white/[0.05] transition-colors w-full">
+        <button className="flex items-center justify-center gap-1 px-2 py-1 rounded-md transition-colors w-full"
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+        >
           {date ? (
             <>
-              {isOverdue && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
+              {isOverdue && <AlertTriangle size={11} style={{ color: "var(--sys-red)" }} className="shrink-0" />}
               <span
-                className={`text-xs ${
-                  isOverdue ? "text-red-400" : isTodayDate ? "text-[#5b9cf6]" : "text-white/50"
-                }`}
+                className="text-xs"
+                style={{ color: isOverdue ? "var(--sys-red)" : isTodayDate ? "var(--chart-primary)" : "var(--text-3)" }}
               >
                 {format(date, "MMM d")}
               </span>
               {isTodayDate && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#5b9cf6] shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--chart-primary)" }} />
               )}
             </>
           ) : (
-            <span className="text-white/15 text-xs">—</span>
+            <span className="text-xs" style={{ color: "var(--text-4)" }}>—</span>
           )}
         </button>
       </Popover.Trigger>
@@ -72,21 +78,31 @@ export function DateCell({ value, itemId, columnId, completedAt, onSuccess }: Da
         <Popover.Content
           align="center"
           sideOffset={4}
-          className="bg-[#252525] border border-white/[0.09] rounded-xl shadow-2xl p-3 z-50"
+          className="rounded-xl shadow-2xl p-3 z-50"
+          style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
         >
-          <p className="text-[10px] text-white/30 uppercase tracking-widest font-medium mb-2">
+          <p className="text-[10px] uppercase tracking-widest font-medium mb-2" style={{ color: "var(--text-4)" }}>
             Due date
           </p>
           <input
             type="date"
             defaultValue={localValue ? localValue.slice(0, 10) : ""}
             onChange={(e) => handleChange(e.target.value)}
-            className="bg-[#1c1c1c] border border-white/[0.1] text-white/80 text-sm px-3 py-1.5 rounded-lg outline-none focus:border-[#5b9cf6]/50 w-full [color-scheme:dark]"
+            className="text-sm px-3 py-1.5 rounded-lg outline-none w-full"
+            style={{
+              background: "var(--bg-input)",
+              border: "1px solid var(--border)",
+              color: "var(--text-1)",
+              colorScheme: isLight ? "light" : "dark",
+            }}
           />
           {localValue && (
             <button
               onClick={() => handleChange("")}
-              className="mt-2 w-full text-xs text-white/30 hover:text-red-400 transition-colors text-center py-1"
+              className="mt-2 w-full text-xs transition-colors text-center py-1"
+              style={{ color: "var(--text-4)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
             >
               Clear date
             </button>

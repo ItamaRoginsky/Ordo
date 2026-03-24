@@ -106,7 +106,10 @@ function SubTaskRow({
   }
 
   return (
-    <div className="flex items-center gap-2 pl-8 pr-2 py-1.5 hover:bg-white/[0.02] group/sub rounded-lg transition-colors">
+    <div className="flex items-center gap-2 pl-8 pr-2 py-1.5 group/sub rounded-lg transition-colors"
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+    >
       <PriorityCircle priority={item.priority} done={done} onClick={onToggle} />
       {editing ? (
         <input
@@ -118,19 +121,24 @@ function SubTaskRow({
             if (e.key === "Enter") submitRename();
             if (e.key === "Escape") { setEditing(false); setEditName(item.name); }
           }}
-          className="flex-1 text-xs bg-white/[0.06] border border-[#5b9cf6]/40 rounded px-1.5 py-0.5 text-white/80 outline-none"
+          className="flex-1 text-xs rounded px-1.5 py-0.5 outline-none"
+          style={{ background: "var(--bg-input)", border: "1px solid var(--accent)", color: "var(--text-1)" }}
         />
       ) : (
         <span
           onClick={() => setEditing(true)}
-          className={`flex-1 text-xs cursor-text ${done ? "line-through text-white/20" : "text-white/60"}`}
+          className="flex-1 text-xs cursor-text"
+          style={{ color: done ? "var(--text-4)" : "var(--text-3)", textDecoration: done ? "line-through" : "none" }}
         >
           {item.name}
         </span>
       )}
       <button
         onClick={onDelete}
-        className="opacity-0 group-hover/sub:opacity-100 p-0.5 text-white/20 hover:text-red-400 transition-all rounded"
+        className="opacity-0 group-hover/sub:opacity-100 p-0.5 transition-all rounded"
+        style={{ color: "var(--text-4)" }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
       >
         <X size={11} />
       </button>
@@ -176,7 +184,10 @@ function TaskRow({
 
   return (
     <div>
-      <div className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/[0.025] group/row rounded-lg transition-colors">
+    <div className="flex items-center gap-2.5 px-3 py-2 group/row rounded-lg transition-colors"
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+    >
         <PriorityCircle
           priority={item.priority}
           done={done}
@@ -193,7 +204,7 @@ function TaskRow({
 
         {/* Category tag */}
         {item.category && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40 shrink-0">
+          <span className="text-[10px] px-2 py-0.5 rounded-full shrink-0" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
             {item.category}
           </span>
         )}
@@ -205,13 +216,12 @@ function TaskRow({
               className="w-1.5 h-1.5 rounded-full"
               style={{ backgroundColor: item.group.board.color ?? "#6b7280" }}
             />
-            <span className="text-[10px] text-white/30">{item.group.board.name}</span>
+            <span className="text-[10px]" style={{ color: "var(--text-4)" }}>{item.group.board.name}</span>
           </div>
         )}
 
-        {/* Scheduled date */}
         {item.scheduledDate && (
-          <span className={`text-[10px] shrink-0 ${isOverdue ? "text-red-400" : "text-white/25"}`}>
+          <span className="text-[10px] shrink-0" style={{ color: isOverdue ? "var(--sys-red)" : "var(--text-4)" }}>
             {format(parseISO(item.scheduledDate), "MMM d")}
           </span>
         )}
@@ -220,7 +230,8 @@ function TaskRow({
         {item.subItems.length > 0 && (
           <button
             onClick={() => setSubtasksOpen(!subtasksOpen)}
-            className="flex items-center gap-0.5 text-[10px] text-white/30 hover:text-white/60 transition-colors shrink-0"
+            className="flex items-center gap-0.5 text-[10px] transition-colors shrink-0"
+            style={{ color: "var(--text-4)" }}
           >
             <ChevronRight
               size={10}
@@ -232,7 +243,10 @@ function TaskRow({
 
         <button
           onClick={() => onDelete(item.id)}
-          className="opacity-0 group-hover/row:opacity-100 p-0.5 text-white/15 hover:text-red-400 transition-all rounded shrink-0"
+          className="opacity-0 group-hover/row:opacity-100 p-0.5 transition-all rounded shrink-0"
+          style={{ color: "var(--text-4)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
         >
           <X size={13} />
         </button>
@@ -264,13 +278,15 @@ function TaskRow({
                   if (e.key === "Escape") { setAddingSubtask(false); setSubtaskName(""); }
                 }}
                 placeholder="Subtask name…"
-                className="w-full text-xs bg-white/[0.06] border border-[#5b9cf6]/30 rounded-lg px-2 py-1 text-white/75 placeholder:text-white/20 outline-none"
+                className="w-full text-xs rounded-lg px-2 py-1 outline-none"
+                style={{ background: "var(--bg-input)", border: "1px solid var(--accent)", color: "var(--text-1)" }}
               />
             </div>
           ) : (
             <button
               onClick={() => setAddingSubtask(true)}
-              className="pl-8 pr-3 py-1 text-[10px] text-white/20 hover:text-white/45 transition-colors flex items-center gap-1"
+              className="pl-8 pr-3 py-1 text-[10px] transition-colors flex items-center gap-1"
+              style={{ color: "var(--text-4)" }}
             >
               <Plus size={10} />
               Add subtask
@@ -340,7 +356,7 @@ function PrioritySection({
           {group.label}
         </span>
         <div className="flex-1 h-px mx-2" style={{ background: "var(--border)" }} />
-        <span className="text-[10px] text-white/25">
+        <span className="text-[10px]" style={{ color: "var(--text-4)" }}>
           {doneCount}/{items.length}
         </span>
       </button>
@@ -360,7 +376,7 @@ function PrioritySection({
           ))}
 
           {showAddModal ? (
-            <div className="p-2 border-t border-white/[0.05]">
+            <div className="p-2" style={{ borderTop: "1px solid var(--border)" }}>
               <AddTaskModal
                 defaultDate={viewDate}
                 defaultPriority={group.key !== "p4" ? group.key : undefined}
@@ -378,6 +394,8 @@ function PrioritySection({
               onClick={() => setShowAddModal(true)}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-xs transition-colors"
               style={{ color: "var(--text-4)", borderTop: "1px solid var(--border)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
             >
               <Plus size={12} />
               Add task
@@ -584,7 +602,8 @@ export default function TodayPage() {
             <div className="mt-2">
               <button
                 onClick={() => setCompletedOpen(!completedOpen)}
-                className="flex items-center gap-2 mb-2 px-1 text-[10px] text-white/25 hover:text-white/40 w-full"
+                className="flex items-center gap-2 mb-2 px-1 text-[10px] w-full"
+                style={{ color: "var(--text-4)" }}
               >
                 <ChevronDown
                   size={10}
@@ -593,11 +612,14 @@ export default function TodayPage() {
                 <span className="uppercase tracking-widest font-semibold">
                   Completed today ({completedItems.length})
                 </span>
-                <div className="flex-1 h-px bg-white/[0.04] mx-2" />
+                <div className="flex-1 h-px mx-2" style={{ background: "var(--border)" }} />
                 {completedOpen && (
                   <span
                     onClick={(e) => { e.stopPropagation(); clearCompleted(); }}
-                    className="text-white/20 hover:text-red-400 transition-colors cursor-pointer"
+                    className="transition-colors cursor-pointer"
+                    style={{ color: "var(--text-4)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
                   >
                     Clear all
                   </span>
@@ -625,7 +647,7 @@ export default function TodayPage() {
 
       {detailItem && (
         <TaskDetailModal
-          item={{ ...detailItem, group: detailItem.group }}
+          item={{ ...detailItem, deadline: null, group: detailItem.group }}
           onClose={() => setDetailItem(null)}
           onUpdate={async (id, patch) => { await updateItem(id, patch); }}
           onDelete={async (id) => { await deleteItem(id); setDetailItem(null); }}

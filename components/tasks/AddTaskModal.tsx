@@ -20,6 +20,8 @@ import {
 import * as Popover from "@radix-ui/react-popover";
 import { X, Flag, Tag, ChevronLeft, ChevronRight, Calendar, Send } from "lucide-react";
 
+import { useTheme } from "@/lib/theme";
+
 export interface NewTask {
   name: string;
   description?: string;
@@ -46,7 +48,7 @@ const PRIORITY_CONFIG = {
   p1: { label: "P1", color: "#ef4444", bg: "bg-red-500/20 text-red-400 border-red-500/30" },
   p2: { label: "P2", color: "#f97316", bg: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
   p3: { label: "P3", color: "#5b9cf6", bg: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  p4: { label: "P4", color: "#6b7280", bg: "bg-white/[0.06] text-white/30 border-white/10" },
+  p4: { label: "P4", color: "#6b7280", bg: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
 };
 
 const SUBMIT_BG: Record<string, string> = {
@@ -75,7 +77,10 @@ function MiniCalendar({
       <div className="flex items-center justify-between mb-3 px-1">
         <button
           onClick={() => setViewMonth(subMonths(viewMonth, 1))}
-          className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-white/80 transition-colors"
+          className="p-1 rounded transition-colors"
+          style={{ color: "var(--text-4)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <ChevronLeft size={13} />
         </button>
@@ -84,7 +89,10 @@ function MiniCalendar({
         </span>
         <button
           onClick={() => setViewMonth(addMonths(viewMonth, 1))}
-          className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-white/80 transition-colors"
+          className="p-1 rounded transition-colors"
+          style={{ color: "var(--text-4)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <ChevronRight size={13} />
         </button>
@@ -105,15 +113,14 @@ function MiniCalendar({
             <button
               key={day.toISOString()}
               onClick={() => onSelect(day)}
-              className={`h-7 w-full rounded text-[11px] transition-colors ${
-                sel
-                  ? "bg-[#5b9cf6] text-white font-medium"
-                  : tod
-                  ? "text-[#5b9cf6] font-medium hover:bg-white/[0.06]"
-                  : otherMonth
-                  ? "text-white/15 hover:bg-white/[0.04]"
-                  : "text-white/65 hover:bg-white/[0.06]"
-              }`}
+              className="h-7 w-full rounded text-[11px] transition-colors"
+              style={{
+                background: sel ? "var(--chart-primary)" : "transparent",
+                color: sel ? "#fff" : tod ? "var(--chart-primary)" : otherMonth ? "var(--text-4)" : "var(--text-2)",
+                fontWeight: sel || tod ? 500 : 400,
+              }}
+              onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               {format(day, "d")}
             </button>
@@ -150,18 +157,23 @@ function DatePickerPopover({
           <button
             key={opt.label}
             onClick={() => onChange(opt.date)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] transition-colors group"
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors group"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           >
             <div className="flex items-center gap-2.5">
               <span className="text-sm">{opt.icon}</span>
-              <span className="text-sm text-white/75">{opt.label}</span>
+              <span className="text-sm" style={{ color: "var(--text-2)" }}>{opt.label}</span>
             </div>
-            <span className="text-xs text-white/30">{opt.sub}</span>
+            <span className="text-xs" style={{ color: "var(--text-4)" }}>{opt.sub}</span>
           </button>
         ))}
         <button
           onClick={() => onChange(null)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-white/40 transition-colors"
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-colors"
+          style={{ color: "var(--text-3)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <span className="text-sm">⊘</span>
           <span className="text-sm">No date</span>
@@ -194,13 +206,15 @@ function PriorityPickerPopover({
         <button
           key={opt.key}
           onClick={() => onChange(opt.key)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors"
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <div className="flex items-center gap-2.5">
             <Flag size={13} style={{ color: opt.color }} />
-            <span className="text-sm text-white/75">{opt.label}</span>
+            <span className="text-sm" style={{ color: "var(--text-2)" }}>{opt.label}</span>
           </div>
-          {value === opt.key && <span className="text-[#5b9cf6] text-xs">✓</span>}
+          {value === opt.key && <span className="text-xs" style={{ color: "var(--chart-primary)" }}>✓</span>}
         </button>
       ))}
     </div>
@@ -291,7 +305,7 @@ export function AddTaskModal({
       {(scheduledDate || priority !== "p4" || category) && (
         <div className="px-4 py-2 flex items-center gap-1.5 flex-wrap" style={{ borderTop: "1px solid var(--border)" }}>
           {scheduledDate && (
-            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e]">
+            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border" style={{ borderColor: "rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.1)", color: "var(--sys-green)" }}>
               <Calendar size={10} />
               {isDateToday ? "Today" : format(scheduledDate, "MMM d")}
               <button onClick={() => setScheduledDate(null)} className="hover:text-white ml-0.5">
@@ -311,10 +325,10 @@ export function AddTaskModal({
             </span>
           )}
           {category && (
-            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-white/[0.1] bg-white/[0.05] text-white/50">
+            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full" style={{ border: "1px solid var(--border)", background: "var(--bg-hover)", color: "var(--text-3)" }}>
               <Tag size={10} />
               {category}
-              <button onClick={() => setCategory("")} className="hover:text-white ml-0.5">
+              <button onClick={() => setCategory("")} className="ml-0.5" style={{ color: "var(--text-3)" }}>
                 <X size={9} />
               </button>
             </span>
@@ -328,8 +342,11 @@ export function AddTaskModal({
         <Popover.Root>
           <Popover.Trigger asChild>
             <button
-              className={`${compact ? "p-1 w-6 h-6" : "p-1.5"} rounded-lg text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-colors flex items-center justify-center`}
+              className={`${compact ? "p-1 w-6 h-6" : "p-1.5"} rounded-lg transition-colors flex items-center justify-center`}
               title="Set date"
+              style={{ color: "var(--text-4)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               <Calendar size={compact ? 12 : 14} />
             </button>
@@ -349,9 +366,11 @@ export function AddTaskModal({
         <Popover.Root>
           <Popover.Trigger asChild>
             <button
-              className={`${compact ? "p-1 w-6 h-6" : "p-1.5"} rounded-lg hover:bg-white/[0.06] transition-colors flex items-center justify-center`}
+              className={`${compact ? "p-1 w-6 h-6" : "p-1.5"} rounded-lg transition-colors flex items-center justify-center`}
               title="Set priority"
-              style={{ color: priority !== "p4" ? PRIORITY_CONFIG[priority].color : "rgba(255,255,255,0.35)" }}
+              style={{ color: priority !== "p4" ? PRIORITY_CONFIG[priority].color : "var(--text-4)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               <Flag size={compact ? 12 : 14} />
             </button>
@@ -370,8 +389,11 @@ export function AddTaskModal({
         {/* Category */}
         <button
           onClick={() => setEditingCategory(true)}
-          className={`${compact ? "p-1 w-6 h-6" : "p-1.5"} rounded-lg text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-colors flex items-center justify-center`}
+          className={`${compact ? "p-1 w-6 h-6" : "p-1.5"} rounded-lg transition-colors flex items-center justify-center`}
           title="Add category"
+          style={{ color: "var(--text-4)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <Tag size={compact ? 12 : 14} />
         </button>
@@ -385,7 +407,8 @@ export function AddTaskModal({
               if (e.key === "Enter" || e.key === "Escape") setEditingCategory(false);
             }}
             placeholder="Category…"
-            className="text-xs bg-white/[0.06] border border-white/[0.1] rounded-lg px-2 py-1 text-white/70 outline-none w-24 placeholder:text-white/25"
+            className="text-xs rounded-lg px-2 py-1 outline-none w-24"
+            style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-1)" }}
           />
         )}
       </div>
@@ -395,10 +418,14 @@ export function AddTaskModal({
         {/* Project selector */}
         <Popover.Root>
           <Popover.Trigger asChild>
-            <button className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.06]">
+            <button className="flex items-center gap-1.5 text-xs transition-colors px-2 py-1 rounded-lg"
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >
               <span>{selectedProject?.icon ?? "📋"}</span>
               <span>{selectedProject?.name ?? "Inbox"}</span>
-              <ChevronRight size={10} className="rotate-90 text-white/30" />
+              <ChevronRight size={10} className="rotate-90" style={{ color: "var(--text-4)" }} />
             </button>
           </Popover.Trigger>
           <Popover.Portal>
@@ -412,14 +439,16 @@ export function AddTaskModal({
                 <button
                   key={p.id}
                   onClick={() => setProjectId(p.id)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: p.color ?? "#6b7280" }}
                   />
                   <span className="text-sm truncate" style={{ color: "var(--text-2)" }}>{p.name}</span>
-                  {p.id === projectId && <span className="ml-auto text-[#5b9cf6] text-xs">✓</span>}
+                  {p.id === projectId && <span className="ml-auto text-xs" style={{ color: "var(--chart-primary)" }}>✓</span>}
                 </button>
               ))}
             </Popover.Content>
@@ -429,7 +458,10 @@ export function AddTaskModal({
         <div className="flex items-center gap-2">
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: "var(--text-4)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           >
             <X size={15} />
           </button>

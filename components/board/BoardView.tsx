@@ -54,12 +54,12 @@ export function BoardView({ board }: { board: BoardWithData }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#111111]">
+    <div className="flex flex-col h-full" style={{ background: "var(--bg-page)" }}>
       {/* Board header */}
-      <div className="px-8 pt-5 pb-4 bg-[#141414] border-b border-white/[0.06] shrink-0">
+      <div className="px-8 pt-5 pb-4 shrink-0" style={{ background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-3">
           <span className="text-2xl leading-none">{board.icon ?? "📋"}</span>
-          <h1 className="text-lg font-semibold text-white/90 tracking-tight">{board.name}</h1>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>{board.name}</h1>
         </div>
       </div>
 
@@ -67,10 +67,13 @@ export function BoardView({ board }: { board: BoardWithData }) {
       <div className="flex-1 overflow-auto px-8 py-6">
         {board.groups.length === 0 && !isAddingGroup ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <p className="text-white/25 text-sm">This project has no groups yet</p>
+            <p className="text-sm" style={{ color: "var(--text-4)" }}>This project has no groups yet</p>
             <button
               onClick={openAddGroup}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#5b9cf6] border border-[#5b9cf6]/25 rounded-lg hover:bg-[#5b9cf6]/10 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors"
+              style={{ color: "var(--chart-primary)", border: "1px solid var(--border)", background: "transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent-subtle)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               <Plus size={14} />
               Add group
@@ -106,13 +109,17 @@ export function BoardView({ board }: { board: BoardWithData }) {
                 }}
                 onBlur={submitGroup}
                 placeholder="Group name"
-                className="mt-4 block px-3 py-2 text-sm bg-[#1e1e1e] border border-[#5b9cf6]/40 text-white/90 rounded-lg outline-none focus:border-[#5b9cf6]/70 focus:ring-2 focus:ring-[#5b9cf6]/10 w-64 placeholder:text-white/20 transition-all"
+                className="mt-4 block px-3 py-2 text-sm rounded-lg outline-none w-64 transition-all"
+                style={{ background: "var(--bg-input)", border: "1px solid var(--accent)", color: "var(--text-1)" }}
                 disabled={addGroup.isPending}
               />
             ) : (
               <button
                 onClick={openAddGroup}
-                className="mt-4 flex items-center gap-2 px-3 py-2 text-sm text-white/30 hover:text-white/60 hover:bg-white/[0.04] border border-dashed border-white/[0.1] rounded-lg transition-colors"
+                className="mt-4 flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors"
+                style={{ color: "var(--text-4)", border: "1px dashed var(--border)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
               >
                 <Plus size={13} />
                 Add group
