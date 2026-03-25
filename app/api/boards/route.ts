@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
 
   const { name, icon, color } = await req.json();
 
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
+  if (name.length > 200) {
+    return NextResponse.json({ error: "name must be under 200 characters" }, { status: 400 });
+  }
+
   const board = await db.$transaction(async (tx) => {
     const b = await tx.board.create({
       data: { name, icon, color, ownerId: me.id, type: "project" },

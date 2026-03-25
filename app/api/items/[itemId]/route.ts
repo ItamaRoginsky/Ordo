@@ -51,6 +51,25 @@ export async function PATCH(
 
     const { name, notes, position, groupId, isToday, completedAt, scheduledDate, priority, category, parentId, description, deadline } = await req.json();
 
+    // Validate name length if provided
+    if (name !== undefined && (typeof name !== "string" || !name.trim() || name.length > 500)) {
+        return NextResponse.json({ error: "name must be a non-empty string up to 500 characters" }, { status: 400 });
+    }
+    if (description !== undefined && description !== null && typeof description === "string" && description.length > 10000) {
+        return NextResponse.json({ error: "description must be under 10000 characters" }, { status: 400 });
+    }
+
+    // IDOR guard: if moving to a different group, verify ownership of the target group
+    if (groupId !== undefined && groupId !== item.groupId) {
+        const targetGroup = await db.group.findUnique({
+            where: { id: groupId },
+            include: { board: true },
+        });
+        if (!targetGroup || targetGroup.board.ownerId !== me.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+    }
+
     // Auto-set scheduledDate to today midnight when pinning to My Day
     let resolvedScheduledDate = scheduledDate;
     if (isToday === true && scheduledDate === undefined && !item.scheduledDate) {

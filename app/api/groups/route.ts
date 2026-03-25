@@ -8,6 +8,16 @@ export async function POST(req: NextRequest) {
 
   const { boardId, name, color } = await req.json();
 
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
+  if (name.length > 200) {
+    return NextResponse.json({ error: "name must be under 200 characters" }, { status: 400 });
+  }
+  if (!boardId || typeof boardId !== "string") {
+    return NextResponse.json({ error: "boardId is required" }, { status: 400 });
+  }
+
   const board = await db.board.findUnique({ where: { id: boardId } });
   if (!board || board.ownerId !== me.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

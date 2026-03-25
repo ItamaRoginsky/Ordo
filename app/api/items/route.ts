@@ -6,7 +6,17 @@ export async function POST(req: NextRequest) {
   const me = await getOrdoUser();
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { groupId, name, priority, category, parentId, isToday, scheduledDate } = await req.json();
+  const { groupId, name, priority, category, parentId, isToday, scheduledDate, description } = await req.json();
+
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
+  if (name.length > 500) {
+    return NextResponse.json({ error: "name must be under 500 characters" }, { status: 400 });
+  }
+  if (!groupId || typeof groupId !== "string") {
+    return NextResponse.json({ error: "groupId is required" }, { status: 400 });
+  }
 
   const group = await db.group.findUnique({
     where: { id: groupId },
@@ -25,13 +35,14 @@ export async function POST(req: NextRequest) {
   const item = await db.item.create({
     data: {
       groupId,
-      name,
+      name: name.trim(),
       position,
       ...(priority !== undefined && { priority }),
       ...(category !== undefined && { category }),
       ...(parentId !== undefined && { parentId }),
       ...(isToday !== undefined && { isToday }),
       ...(scheduledDate !== undefined && { scheduledDate: new Date(scheduledDate) }),
+      ...(description !== undefined && { description }),
     },
     include: { columnValues: true, subItems: true },
   });

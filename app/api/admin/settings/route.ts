@@ -37,6 +37,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "key and value required" }, { status: 400 });
   }
 
+  const ALLOWED_KEYS = ["allow_registrations", "maintenance_mode", "require_invite"];
+  if (!ALLOWED_KEYS.includes(key)) {
+    return NextResponse.json({ error: "Invalid setting key" }, { status: 400 });
+  }
+
   const setting = await db.appSetting.upsert({
     where: { key },
     update: { value: String(value) },

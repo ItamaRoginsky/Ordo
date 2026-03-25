@@ -26,15 +26,24 @@ export async function getOrdoUser(): Promise<User | null> {
       },
     });
   } else {
-    user = await db.user.create({
-      data: {
-        auth0Id: sub,
-        email: email ?? "",
-        name: name ?? null,
-        picture: picture ?? null,
-        lastLoginAt: new Date(),
-      },
-    });
+    try {
+      user = await db.user.create({
+        data: {
+          auth0Id: sub,
+          email: email ?? "",
+          name: name ?? null,
+          picture: picture ?? null,
+          lastLoginAt: new Date(),
+        },
+      });
+    } catch (err: any) {
+      // Unique constraint — a concurrent request already created the user
+      if (err?.code === "P2002") {
+        const created = await db.user.findUnique({ where: { auth0Id: sub } });
+        if (created) return created;
+      }
+      throw err;
+    }
   }
 
   // Ensure inbox board exists (only for new users)

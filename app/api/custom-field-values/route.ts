@@ -8,6 +8,16 @@ export async function PATCH(req: NextRequest) {
 
   const { itemId, fieldId, value } = await req.json();
 
+  if (!itemId || typeof itemId !== "string") {
+    return NextResponse.json({ error: "itemId is required" }, { status: 400 });
+  }
+  if (!fieldId || typeof fieldId !== "string") {
+    return NextResponse.json({ error: "fieldId is required" }, { status: 400 });
+  }
+  if (value === undefined) {
+    return NextResponse.json({ error: "value is required" }, { status: 400 });
+  }
+
   // Verify ownership through item → group → board chain
   const item = await db.item.findUnique({
     where: { id: itemId },

@@ -7,8 +7,14 @@ export async function POST(req: NextRequest) {
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { itemId, text } = await req.json();
-  if (!itemId || !text?.trim()) {
-    return NextResponse.json({ error: "itemId and text are required" }, { status: 400 });
+  if (!itemId || typeof itemId !== "string") {
+    return NextResponse.json({ error: "itemId is required" }, { status: 400 });
+  }
+  if (!text?.trim()) {
+    return NextResponse.json({ error: "text is required" }, { status: 400 });
+  }
+  if (text.trim().length > 5000) {
+    return NextResponse.json({ error: "comment must be under 5000 characters" }, { status: 400 });
   }
 
   // Verify ownership via item → group → board

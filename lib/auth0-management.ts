@@ -27,7 +27,7 @@ async function getManagementToken(): Promise<string> {
 
 export async function inviteUser(email: string): Promise<void> {
   const token = await getManagementToken();
-  await fetch(`https://${domain}/api/v2/tickets/password-change`, {
+  const res = await fetch(`https://${domain}/api/v2/tickets/password-change`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -35,10 +35,14 @@ export async function inviteUser(email: string): Promise<void> {
     },
     body: JSON.stringify({
       email,
-      connection_id: "cgr_gs6KbyukaZiJdEiU",
+      connection_id: process.env.AUTH0_CONNECTION_ID ?? "cgr_gs6KbyukaZiJdEiU",
       ttl_sec: 604800, // 7 days
     }),
   });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message ?? `Failed to invite user (${res.status})`);
+  }
 }
 
 export async function blockUser(auth0Id: string): Promise<void> {
