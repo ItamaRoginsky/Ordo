@@ -35,7 +35,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ boa
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(board);
+  return NextResponse.json(board, {
+    headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" },
+  });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ boardId: string }> }) {

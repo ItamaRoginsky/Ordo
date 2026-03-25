@@ -61,5 +61,5 @@ export async function GET(req: NextRequest) {
     inboxGroupId,
     inboxBoard: inboxBoard ? { id: inboxBoard.id, name: inboxBoard.name } : null,
     projects,
-  });
+  }, { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" } });
 }

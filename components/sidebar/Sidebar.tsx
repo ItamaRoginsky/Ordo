@@ -86,9 +86,13 @@ export function Sidebar({ boards, user }: SidebarProps) {
           </span>
         </div>
         <nav style={{ padding: "0 8px", marginBottom: 12 }}>
-          <NavItem href="/dashboard" label="Home"    active={pathname === "/dashboard" || pathname === "/"} />
-          <NavItem href="/today"     label="My Day"  active={pathname === "/today"} />
-          <NavItem href="/week"      label="My Week" active={pathname === "/week"} />
+          <NavItem href="/dashboard" label="Home"    active={pathname === "/dashboard" || pathname === "/"}
+            prefetchKey={["stats"]} prefetchUrl="/api/stats" />
+          <NavItem href="/today"     label="My Day"  active={pathname === "/today"}
+            prefetchKey={["today", new Date().toISOString().split("T")[0]]}
+            prefetchUrl={`/api/today?date=${new Date().toISOString().split("T")[0]}`} />
+          <NavItem href="/week"      label="My Week" active={pathname === "/week"}
+            prefetchKey={["week"]} prefetchUrl="/api/week" />
         </nav>
 
         <div style={{ margin: "0 12px 8px", borderTop: "1px solid var(--border)" }} />
@@ -196,7 +200,30 @@ export function Sidebar({ boards, user }: SidebarProps) {
   );
 }
 
-function NavItem({ href, label, active }: { href: string; label: string; active: boolean }) {
+function NavItem({ href, label, active, prefetchKey, prefetchUrl }: {
+  href: string;
+  label: string;
+  active: boolean;
+  prefetchKey?: unknown[];
+  prefetchUrl?: string;
+}) {
+  const queryClient = useQueryClient();
+
+  function handleMouseEnter(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (!active) {
+      (e.currentTarget as HTMLElement).style.color = "var(--text-1)";
+      (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+    }
+    // Prefetch data so it's ready when user clicks
+    if (prefetchKey && prefetchUrl) {
+      queryClient.prefetchQuery({
+        queryKey: prefetchKey,
+        queryFn: () => fetch(prefetchUrl).then((r) => r.json()),
+        staleTime: 60_000,
+      });
+    }
+  }
+
   return (
     <Link
       href={href}
@@ -214,12 +241,7 @@ function NavItem({ href, label, active }: { href: string; label: string; active:
         marginBottom: 2,
         transition: "color 0.12s, background 0.12s",
       }}
-      onMouseEnter={(e) => {
-        if (!active) {
-          (e.currentTarget as HTMLElement).style.color = "var(--text-1)";
-          (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-        }
-      }}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={(e) => {
         if (!active) {
           (e.currentTarget as HTMLElement).style.color = "var(--text-3)";

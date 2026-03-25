@@ -215,6 +215,8 @@ export async function GET() {
     };
   });
 
+  const headers = { "Cache-Control": "private, max-age=0, stale-while-revalidate=60" };
+
   return NextResponse.json({
     userName: me.name?.split(" ")[0] ?? null,
     doneThisWeek,
@@ -231,5 +233,5 @@ export async function GET() {
     projectProgress,
     dayProgress,
     dailyGlance,
-  });
+  }, { headers });
 }

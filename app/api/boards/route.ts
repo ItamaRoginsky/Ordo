@@ -10,7 +10,9 @@ export async function GET() {
     where: { ownerId: me.id },
     orderBy: { createdAt: "asc" },
   });
-  return NextResponse.json(boards);
+  return NextResponse.json(boards, {
+    headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=60" },
+  });
 }
 
 export async function POST(req: NextRequest) {
