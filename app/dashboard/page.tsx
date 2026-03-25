@@ -45,6 +45,12 @@ interface StatsData {
     lastActivityAt: string | null;
   }[];
   weeklyVelocity: { day: string; date: string; completed: number }[];
+  dailyGlance: {
+    p1: { id: string; name: string; priority: string; group: { board: { name: string; color: string | null } } }[];
+    p2: { id: string; name: string; priority: string; group: { board: { name: string; color: string | null } } }[];
+    p3: { id: string; name: string; priority: string; group: { board: { name: string; color: string | null } } }[];
+    p4: { id: string; name: string; priority: string; group: { board: { name: string; color: string | null } } }[];
+  };
   dayProgress: {
     total: number;
     done: number;
@@ -236,7 +242,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <DailyGlance />
+        <DailyGlance data={data.dailyGlance} />
       </div>
     </div>
   );

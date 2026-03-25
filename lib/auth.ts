@@ -8,50 +8,39 @@ export async function getOrdoUser(): Promise<User | null> {
 
   const { sub, email, name, picture } = session.user;
 
-  // Try to find by auth0Id first, then fall back to email (for admin-created users)
-  let user = await db.user.findUnique({ where: { auth0Id: sub } });
+  // Fast path: user already exists — return immediately, no DB writes
+  const existing = await db.user.findUnique({ where: { auth0Id: sub } });
+  if (existing) return existing;
 
-  if (user) {
+  // First login: create or link user
+  let user: User;
+  const preCreated = email ? await db.user.findUnique({ where: { email } }) : null;
+  if (preCreated) {
     user = await db.user.update({
-      where: { id: user.id },
+      where: { id: preCreated.id },
       data: {
-        email: email ?? user.email,
-        name: name ?? user.name,
-        picture: picture ?? user.picture,
+        auth0Id: sub,
+        name: name ?? preCreated.name,
+        picture: picture ?? preCreated.picture,
         lastLoginAt: new Date(),
       },
     });
   } else {
-    // Check if admin pre-created this user by email
-    const preCreated = email ? await db.user.findUnique({ where: { email } }) : null;
-    if (preCreated) {
-      user = await db.user.update({
-        where: { id: preCreated.id },
-        data: {
-          auth0Id: sub,
-          name: name ?? preCreated.name,
-          picture: picture ?? preCreated.picture,
-          lastLoginAt: new Date(),
-        },
-      });
-    } else {
-      user = await db.user.create({
-        data: {
-          auth0Id: sub,
-          email: email ?? "",
-          name: name ?? null,
-          picture: picture ?? null,
-        },
-      });
-    }
+    user = await db.user.create({
+      data: {
+        auth0Id: sub,
+        email: email ?? "",
+        name: name ?? null,
+        picture: picture ?? null,
+        lastLoginAt: new Date(),
+      },
+    });
   }
 
-  // Ensure inbox board + default group exist (created once on first login)
+  // Ensure inbox board exists (only for new users)
   const inbox = await db.board.findFirst({
-    where: { ownerId: user.id, isSystem: true, type: "inbox" },
-    include: { groups: true },
+    where: { ownerId: user.id, isSystem: true },
   });
-
   if (!inbox) {
     await db.board.create({
       data: {
@@ -61,14 +50,8 @@ export async function getOrdoUser(): Promise<User | null> {
         color: "#6b7280",
         type: "inbox",
         isSystem: true,
-        groups: {
-          create: { name: "Tasks", color: "#6b7280", position: 0 },
-        },
+        groups: { create: { name: "Tasks", color: "#6b7280", position: 0 } },
       },
-    });
-  } else if (inbox.groups.length === 0) {
-    await db.group.create({
-      data: { boardId: inbox.id, name: "Tasks", color: "#6b7280", position: 0 },
     });
   }
 

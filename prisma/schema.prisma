@@ -39,6 +39,9 @@ model Board {
   groups       Group[]
   columns      Column[]
   customFields CustomField[]
+
+  @@index([ownerId])
+  @@index([ownerId, type])
 }
 
 model Group {
@@ -50,6 +53,8 @@ model Group {
 
   board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   items Item[]
+
+  @@index([boardId])
 }
 
 model Item {
@@ -75,6 +80,12 @@ model Item {
   comments     Comment[]
   parent       Item?              @relation("SubItems", fields: [parentId], references: [id], onDelete: SetNull)
   subItems     Item[]             @relation("SubItems")
+
+  @@index([groupId])
+  @@index([parentId])
+  @@index([scheduledDate])
+  @@index([completedAt])
+  @@index([isToday])
 }
 
 model Column {

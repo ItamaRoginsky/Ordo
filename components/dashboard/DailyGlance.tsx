@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { t } from "@/lib/toast";
 
 const PRIORITY_BORDER: Record<string, string> = {
@@ -20,16 +20,19 @@ const PRIORITIES = [
 
 type PriKey = "p1" | "p2" | "p3" | "p4";
 
-export function DailyGlance() {
+type GlanceItem = {
+  id: string;
+  name: string;
+  priority: string;
+  group: { board: { name: string; color: string | null } };
+};
+
+type GlanceData = { p1: GlanceItem[]; p2: GlanceItem[]; p3: GlanceItem[]; p4: GlanceItem[] };
+
+export function DailyGlance({ data }: { data: GlanceData | undefined }) {
   const [activePri, setActivePri] = useState<PriKey>("p1");
   const [showAll, setShowAll] = useState(false);
   const queryClient = useQueryClient();
-
-  const { data } = useQuery({
-    queryKey: ["daily-glance"],
-    queryFn: () => fetch("/api/daily-glance").then((r) => r.json()),
-    refetchInterval: 60_000,
-  });
 
   const { mutate: completeTask } = useMutation({
     mutationFn: (itemId: string) =>
@@ -39,22 +42,21 @@ export function DailyGlance() {
         body: JSON.stringify({ completedAt: new Date().toISOString() }),
       }),
     onSuccess: (_data, itemId) => {
-      const item = allItems.find((i: any) => i.id === itemId);
+      const item = allItems.find((i) => i.id === itemId);
       t.success("Task completed", item?.name);
-      queryClient.invalidateQueries({ queryKey: ["daily-glance"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["today"] });
     },
   });
 
-  // Auto-select the first priority that has tasks (avoids landing on an empty tab)
+  // Auto-select the first priority that has tasks
   useEffect(() => {
     if (!data) return;
     const first = (["p1", "p2", "p3", "p4"] as const).find((p) => data[p]?.length > 0);
     if (first) setActivePri(first);
   }, [data]);
 
-  const allItems: any[] = data?.[activePri] ?? [];
+  const allItems: GlanceItem[] = data?.[activePri] ?? [];
   const shown = showAll ? allItems : allItems.slice(0, 3);
   const remaining = allItems.length - 3;
 
@@ -112,7 +114,7 @@ export function DailyGlance() {
             No {priLabel} priority tasks today 🎉
           </div>
         ) : (
-          shown.map((item: any, i: number) => (
+          shown.map((item, i) => (
             <div
               key={item.id}
               style={{
@@ -123,7 +125,6 @@ export function DailyGlance() {
                 borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none",
               }}
             >
-              {/* Completion circle — border color matches priority, same as My Day */}
               <button
                 onClick={() => completeTask(item.id)}
                 style={{
@@ -148,8 +149,6 @@ export function DailyGlance() {
                   e.currentTarget.style.background = "transparent";
                 }}
               />
-
-              {/* Task name */}
               <span style={{
                 flex: 1,
                 fontSize: 12,
@@ -161,8 +160,6 @@ export function DailyGlance() {
               }}>
                 {item.name}
               </span>
-
-              {/* Source badge */}
               <span style={{
                 fontSize: 9,
                 padding: "1px 5px",

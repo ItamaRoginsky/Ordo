@@ -173,6 +173,24 @@ export async function GET() {
     streak++;
   }
 
+  // Daily glance — today's open tasks grouped by priority (replaces /api/daily-glance)
+  const todayOpenItems = allItems.filter(
+    (i) =>
+      !i.completedAt &&
+      (i.isToday || (i.scheduledDate && i.scheduledDate >= todayStart && i.scheduledDate <= todayEnd))
+  ).map((i) => ({
+    id: i.id,
+    name: i.name,
+    priority: i.priority ?? "p4",
+    group: { board: { name: i.group.board.name, color: i.group.board.color } },
+  }));
+  const dailyGlance = {
+    p1: todayOpenItems.filter((i) => i.priority === "p1"),
+    p2: todayOpenItems.filter((i) => i.priority === "p2"),
+    p3: todayOpenItems.filter((i) => i.priority === "p3"),
+    p4: todayOpenItems.filter((i) => i.priority === "p4" || !i.priority),
+  };
+
   // Project progress for Open Projects widget
   const projectProgress = boards.map((board) => {
     const allBoardItems = board.groups.flatMap((g) => g.items);
@@ -212,5 +230,6 @@ export async function GET() {
     todayAgenda,
     projectProgress,
     dayProgress,
+    dailyGlance,
   });
 }
