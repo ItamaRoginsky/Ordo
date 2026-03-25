@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
@@ -7,11 +9,4 @@ export async function register() {
   }
 }
 
-export const onRequestError = async (
-  err: unknown,
-  request: { path: string; method: string },
-  context: { routerKind: string; routePath: string }
-) => {
-  const { captureRequestError } = await import("@sentry/nextjs");
-  captureRequestError(err, request, context);
-};
+export const onRequestError = Sentry.captureRequestError;

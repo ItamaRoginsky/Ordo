@@ -109,7 +109,7 @@ export function ItemRow({
   const deadlineDate = item.deadline
     ? (typeof item.deadline === "string" ? parseISO(item.deadline) : item.deadline as Date)
     : null;
-  const deadlineOverdue = deadlineDate && !item.completedAt && isPast(deadlineDate) && !isToday(deadlineDate);
+  const deadlineOverdue = deadlineDate && !item.completedAt && isPast(deadlineDate);
   const priority = (item as any).priority as string | null;
 
   return (
