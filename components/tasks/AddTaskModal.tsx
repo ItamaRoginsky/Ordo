@@ -21,6 +21,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { X, Flag, Tag, ChevronLeft, ChevronRight, Calendar, Send } from "lucide-react";
 
 import { useTheme } from "@/lib/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export interface NewTask {
   name: string;
@@ -244,6 +245,7 @@ export function AddTaskModal({
   );
   const [saving, setSaving] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     nameRef.current?.focus();
@@ -273,7 +275,7 @@ export function AddTaskModal({
     onClose();
   }
 
-  return (
+  const card = (
     <div className="rounded-xl shadow-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}>
       {/* Name + description */}
       <div className={`${compact ? "px-3 pt-3 pb-1.5" : "px-4 pt-4 pb-2"}`}>
@@ -487,4 +489,35 @@ export function AddTaskModal({
       </div>
     </div>
   );
+
+  // On mobile (and not compact inline mode), render as a fixed bottom sheet
+  if (isMobile && !compact) {
+    return (
+      <>
+        <div
+          onClick={onClose}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(2px)",
+          }}
+        />
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0, left: 0, right: 0,
+            zIndex: 201,
+            borderRadius: "16px 16px 0 0",
+            paddingBottom: "env(safe-area-inset-bottom)",
+            maxHeight: "90dvh",
+            overflowY: "auto",
+          }}
+        >
+          {card}
+        </div>
+      </>
+    );
+  }
+
+  return card;
 }

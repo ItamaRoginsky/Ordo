@@ -122,7 +122,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-5">
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-5" style={{ padding: 'clamp(12px, 4vw, 24px)' }}>
       {/* Greeting banner */}
       <div className="px-5 py-4 flex items-center justify-between" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
         <div>
@@ -139,7 +139,7 @@ export default function DashboardPage() {
             {format(today, "EEEE, MMMM d")}
           </p>
         </div>
-        <div className="text-right shrink-0 ml-4">
+        <div className="text-right shrink-0 ml-4 hidden sm:block">
           <p className="text-xs" style={{ color: "var(--text-4)" }}>Week {weekNum}</p>
           {streak > 0 && (
             <p className="text-sm font-medium mt-0.5 text-[#f59e0b]">
@@ -150,7 +150,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 kpi-grid">
         <KpiCard value={doneThisWeek} label="Done this week" barColor="#22c55e"
           barWidth={doneThisWeek > 0 ? Math.min(100, (doneThisWeek / Math.max(openTasks, 1)) * 100) : 0}
           href="/done" />
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Day Progress + Open Projects */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 widget-grid">
         <DayProgress data={data.dayProgress} />
 
         <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 widget-grid">
         <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
           <h2 className="text-sm font-medium mb-4" style={{ color: "var(--text-2)" }}>Weekly velocity</h2>
           <ResponsiveContainer width="100%" height={140}>

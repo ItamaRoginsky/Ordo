@@ -8,7 +8,8 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Item, Column, ColumnValue } from "@prisma/client";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { StatusPill } from "./StatusPill";
-import { BOARD_ROW_GRID } from "@/lib/board-layout";
+import { BOARD_ROW_GRID, MOBILE_ROW_GRID } from "@/lib/board-layout";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { format, isPast, parseISO } from "date-fns";
 
 type ItemWithValues = Item & {
@@ -61,6 +62,8 @@ export function ItemRow({
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const rowGrid = isMobile ? MOBILE_ROW_GRID : BOARD_ROW_GRID;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["board", boardId] });
@@ -118,7 +121,7 @@ export function ItemRow({
         className="group"
         style={{
           display: "grid",
-          gridTemplateColumns: BOARD_ROW_GRID,
+          gridTemplateColumns: rowGrid,
           alignItems: "center",
           height: 40,
           borderBottom: "1px solid var(--border)",
@@ -234,7 +237,8 @@ export function ItemRow({
           )}
         </div>
 
-        {/* Col 4 — deadline (120px) */}
+        {/* Col 4 — deadline (120px) — hidden on mobile */}
+        {!isMobile && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           {deadlineDate ? (
             <Tip text={`${format(deadlineDate, "MMMM d, yyyy")}${deadlineOverdue ? " · overdue" : ""}`}>
@@ -257,8 +261,10 @@ export function ItemRow({
             <span style={{ fontSize: 11, color: "var(--text-4)" }}>—</span>
           )}
         </div>
+        )}
 
-        {/* Col 5 — actions (36px) */}
+        {/* Col 5 — actions (36px) — hidden on mobile */}
+        {!isMobile && (
         <div
           className="opacity-0 group-hover:opacity-100 transition-opacity"
           style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -337,6 +343,7 @@ export function ItemRow({
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
         </div>
+        )}
       </div>
 
       {detailOpen && (

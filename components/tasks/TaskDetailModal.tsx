@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { X, Plus, ExternalLink, Trash2, Send } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface SubItem {
   id: string;
@@ -66,6 +67,116 @@ function SideLabel({ label }: { label: string }) {
   return <p className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "var(--text-4)" }}>{label}</p>;
 }
 
+function RightPanel({ item, onUpdate, customFields, customValues, getCustomValue }: {
+  item: DetailItem;
+  onUpdate: (id: string, patch: Record<string, unknown>) => void;
+  customFields: CustomFieldDef[];
+  customValues: CustomFieldVal[];
+  getCustomValue: (fieldId: string) => unknown;
+}) {
+  return (
+    <>
+      {/* Project */}
+      <div>
+        <SideLabel label="Project" />
+        <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-2)" }}>
+          <span>{item.group.board.icon ?? "📋"}</span>
+          <span>{item.group.board.name}</span>
+        </span>
+      </div>
+
+      {/* Scheduled date */}
+      <div>
+        <SideLabel label="Date" />
+        <DatePicker
+          value={item.scheduledDate}
+          onChange={(iso) => onUpdate(item.id, { scheduledDate: iso })}
+          placeholder="Set date"
+        />
+      </div>
+
+      {/* Deadline */}
+      <div>
+        <SideLabel label="Deadline" />
+        <DatePicker
+          value={item.deadline}
+          onChange={(iso) => onUpdate(item.id, { deadline: iso })}
+          placeholder="Set deadline"
+        />
+      </div>
+
+      {/* Priority */}
+      <div>
+        <SideLabel label="Priority" />
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <button className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: "var(--text-2)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}>
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG]?.color ?? "#6b7280" }}
+              />
+              {PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG]?.label ?? "No priority"}
+            </button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              className="rounded-xl shadow-2xl z-[60] p-1.5 w-44"
+              style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
+              sideOffset={6}
+            >
+              {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => onUpdate(item.id, { priority: key === "p4" ? null : key })}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                  style={{ color: "var(--text-2)" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
+                  <span className="text-sm">{cfg.label}</span>
+                  {(item.priority ?? "p4") === key && (
+                    <span className="ml-auto text-xs" style={{ color: "var(--chart-primary)" }}>✓</span>
+                  )}
+                </button>
+              ))}
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      </div>
+
+      {/* Custom fields */}
+      {customFields.length > 0 && (
+        <div className="space-y-3">
+          {customFields.map((field) => {
+            const val = getCustomValue(field.id);
+            return (
+              <div key={field.id}>
+                <SideLabel label={field.name} />
+                {field.type === "checkbox" ? (
+                  <input type="checkbox" checked={Boolean(val)} readOnly className="w-4 h-4 rounded accent-[#5b9cf6]" />
+                ) : field.type === "url" && val ? (
+                  <a href={String(val)} target="_blank" rel="noopener noreferrer"
+                    className="text-sm flex items-center gap-1" style={{ color: "var(--chart-primary)" }}>
+                    <ExternalLink size={11} />
+                    {String(val).replace(/^https?:\/\//, "").slice(0, 20)}…
+                  </a>
+                ) : (
+                  <span className="text-sm" style={{ color: "var(--text-2)" }}>
+                    {val != null ? String(val) : <span style={{ color: "var(--text-4)" }}>—</span>}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function TaskDetailModal({
   item,
   onClose,
@@ -73,6 +184,7 @@ export function TaskDetailModal({
   onDelete,
   onAddSubTask,
 }: TaskDetailModalProps) {
+  const isMobile = useIsMobile();
   const [description, setDescription] = useState(item.description ?? "");
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [subtaskName, setSubtaskName] = useState("");
@@ -163,8 +275,23 @@ export function TaskDetailModal({
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div
-          className="rounded-2xl shadow-2xl w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}
+          className="shadow-2xl w-full flex flex-col overflow-hidden"
+          style={{
+            background: "var(--bg-card)",
+            ...(isMobile ? {
+              position: "fixed" as const,
+              inset: 0,
+              borderRadius: 0,
+              maxWidth: "100%",
+              maxHeight: "100dvh",
+              border: "none",
+            } : {
+              border: "1px solid var(--border-strong)",
+              borderRadius: 16,
+              maxWidth: 680,
+              maxHeight: "85vh",
+            }),
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -197,9 +324,27 @@ export function TaskDetailModal({
           </div>
 
           {/* Body */}
-          <div className="flex flex-1 min-h-0 overflow-hidden">
+          <div
+            className="flex flex-1 min-h-0"
+            style={{
+              flexDirection: isMobile ? "column" : "row",
+              overflowY: isMobile ? "auto" : "hidden",
+            }}
+          >
+            {/* Right sidebar shown FIRST on mobile */}
+            {isMobile && (
+              <div className="shrink-0 px-4 py-4 space-y-4" style={{ borderBottom: "1px solid var(--border)" }}>
+                <RightPanel item={item} onUpdate={onUpdate} customFields={customFields} customValues={customValues} getCustomValue={getCustomValue} />
+              </div>
+            )}
             {/* Left */}
-            <div className="flex-1 px-5 py-5 overflow-y-auto min-w-0" style={{ borderRight: "1px solid var(--border)" }}>
+            <div
+              className="flex-1 px-5 py-5 min-w-0"
+              style={{
+                overflowY: isMobile ? "unset" : "auto",
+                borderRight: isMobile ? "none" : "1px solid var(--border)",
+              }}
+            >
               {/* Name + completion */}
               <div className="flex items-start gap-3 mb-4">
                 <button
@@ -365,128 +510,12 @@ export function TaskDetailModal({
               </div>
             </div>
 
-            {/* Right sidebar */}
-            <div className="w-52 shrink-0 px-4 py-5 space-y-5 overflow-y-auto">
-              {/* Project */}
-              <div>
-                <SideLabel label="Project" />
-                <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-2)" }}>
-                  <span>{item.group.board.icon ?? "📋"}</span>
-                  <span>{item.group.board.name}</span>
-                </span>
+            {/* Right sidebar — desktop only */}
+            {!isMobile && (
+              <div className="w-52 shrink-0 px-4 py-5 space-y-5 overflow-y-auto">
+                <RightPanel item={item} onUpdate={onUpdate} customFields={customFields} customValues={customValues} getCustomValue={getCustomValue} />
               </div>
-
-              {/* Scheduled date */}
-              <div>
-                <SideLabel label="Date" />
-                <DatePicker
-                  value={item.scheduledDate}
-                  onChange={(iso) => onUpdate(item.id, { scheduledDate: iso })}
-                  placeholder="Set date"
-                />
-              </div>
-
-              {/* Deadline */}
-              <div>
-                <SideLabel label="Deadline" />
-                <DatePicker
-                  value={item.deadline}
-                  onChange={(iso) => onUpdate(item.id, { deadline: iso })}
-                  placeholder="Set deadline"
-                />
-              </div>
-
-              {/* Priority */}
-              <div>
-                <SideLabel label="Priority" />
-                <Popover.Root>
-                  <Popover.Trigger asChild>
-                    <button className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: "var(--text-2)" }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}>
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG]
-                              ?.color ?? "#6b7280",
-                        }}
-                      />
-                      {PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG]?.label ??
-                        "No priority"}
-                    </button>
-                  </Popover.Trigger>
-                  <Popover.Portal>
-                    <Popover.Content
-                      className="rounded-xl shadow-2xl z-[60] p-1.5 w-44"
-                      style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
-                      sideOffset={6}
-                    >
-                      {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
-                        <button
-                          key={key}
-                          onClick={() =>
-                            onUpdate(item.id, { priority: key === "p4" ? null : key })
-                          }
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-                          style={{ color: "var(--text-2)" }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-                        >
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: cfg.color }}
-                          />
-                          <span className="text-sm">{cfg.label}</span>
-                          {(item.priority ?? "p4") === key && (
-                            <span className="ml-auto text-xs" style={{ color: "var(--chart-primary)" }}>✓</span>
-                          )}
-                        </button>
-                      ))}
-                    </Popover.Content>
-                  </Popover.Portal>
-                </Popover.Root>
-              </div>
-
-              {/* Custom fields */}
-              {customFields.length > 0 && (
-                <div className="space-y-3">
-                  {customFields.map((field) => {
-                    const val = getCustomValue(field.id);
-                    return (
-                      <div key={field.id}>
-                        <SideLabel label={field.name} />
-                        {field.type === "checkbox" ? (
-                          <input
-                            type="checkbox"
-                            checked={Boolean(val)}
-                            readOnly
-                            className="w-4 h-4 rounded accent-[#5b9cf6]"
-                          />
-                        ) : field.type === "url" && val ? (
-                          <a
-                            href={String(val)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm flex items-center gap-1"
-                            style={{ color: "var(--chart-primary)" }}
-                          >
-                            <ExternalLink size={11} />
-                            {String(val).replace(/^https?:\/\//, "").slice(0, 20)}…
-                          </a>
-                        ) : (
-                          <span className="text-sm" style={{ color: "var(--text-2)" }}>
-                            {val != null ? String(val) : (
-                              <span style={{ color: "var(--text-4)" }}>—</span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

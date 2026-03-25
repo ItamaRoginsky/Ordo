@@ -13,7 +13,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { ColHeaders } from "./ColHeaders";
 import { ItemRow } from "./ItemRow";
-import { BOARD_ROW_GRID } from "@/lib/board-layout";
+import { BOARD_ROW_GRID, MOBILE_ROW_GRID } from "@/lib/board-layout";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type ItemWithValues = Item & { columnValues: ColumnValue[] };
 type GroupWithItems = Group & { items: ItemWithValues[] };
@@ -84,6 +85,8 @@ export function GroupRow({
   const [newItemName, setNewItemName] = useState("");
   const addInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const rowGrid = isMobile ? MOBILE_ROW_GRID : BOARD_ROW_GRID;
   const color = group.color ?? "#5b9cf6";
 
   const prevGroupItems = useRef(group.items);

@@ -528,7 +528,7 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
+    <div className="max-w-2xl mx-auto py-8" style={{ padding: "clamp(12px, 4vw, 24px)" }}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-1">
         <Sun size={20} className="text-[#f59e0b]" />

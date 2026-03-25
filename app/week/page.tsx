@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   format,
@@ -18,6 +18,7 @@ import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { AddTaskModal, type NewTask } from "@/components/tasks/AddTaskModal";
 import { sortByPriority, PRIORITY_ORDER } from "@/components/tasks/PriorityDot";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   DndContext,
   DragEndEvent,
@@ -248,6 +249,7 @@ function DayColumn({
 
 export default function WeekPage() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -256,6 +258,13 @@ export default function WeekPage() {
   const [draggingItem, setDraggingItem] = useState<WeekItem | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // Auto-scroll to today's column on mobile
+  useEffect(() => {
+    if (!isMobile) return;
+    const todayEl = document.getElementById('week-today');
+    todayEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [isMobile, weekStart]);
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -355,7 +364,7 @@ export default function WeekPage() {
   const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   return (
-    <div className="flex flex-col h-full px-6 py-8">
+    <div className="flex flex-col h-full" style={{ padding: "clamp(12px, 4vw, 24px)" }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -412,19 +421,42 @@ export default function WeekPage() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => { setDraggingItem(null); setOverDate(null); }}
         >
-          <div className="flex-1 grid grid-cols-7 gap-3 min-h-0">
+          <div
+            className={isMobile ? '' : 'flex-1 grid grid-cols-7 gap-3 min-h-0'}
+            style={isMobile ? {
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              padding: '0 0 16px',
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              flex: 1,
+              minHeight: 0,
+            } : undefined}
+          >
             {days.map((day) => (
-              <DayColumn
+              <div
                 key={day.toISOString()}
-                date={day}
-                items={itemsForDay(day)}
-                onToggle={toggleItem}
-                onAddTask={addTask}
-                onOpenDetail={setDetailItem}
-                projects={projects}
-                inboxBoard={inboxBoard}
-                overDate={overDate}
-              />
+                id={isToday(day) ? 'week-today' : undefined}
+                style={isMobile ? {
+                  flexShrink: 0,
+                  width: 'calc(85vw)',
+                  maxWidth: 280,
+                  scrollSnapAlign: 'start',
+                } : undefined}
+              >
+                <DayColumn
+                  date={day}
+                  items={itemsForDay(day)}
+                  onToggle={toggleItem}
+                  onAddTask={addTask}
+                  onOpenDetail={setDetailItem}
+                  projects={projects}
+                  inboxBoard={inboxBoard}
+                  overDate={overDate}
+                />
+              </div>
             ))}
           </div>
           <DragOverlay>

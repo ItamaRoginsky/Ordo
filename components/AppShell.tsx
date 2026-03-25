@@ -1,7 +1,7 @@
 import { getOrdoUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { Sidebar } from "./sidebar/Sidebar";
 import { QueryProvider } from "./QueryProvider";
+import { AppShellClient } from "./AppShellClient";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getOrdoUser();
@@ -14,10 +14,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryProvider>
-      <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg-page)" }}>
-        <Sidebar boards={boards} user={user} />
-        <main className="flex-1 overflow-auto">{children}</main>
-      </div>
+      <AppShellClient boards={boards} user={user}>
+        {children}
+      </AppShellClient>
     </QueryProvider>
   );
 }
