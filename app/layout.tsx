@@ -1,6 +1,9 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { Auth0Provider } from "@auth0/nextjs-auth0/client";
+import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "sonner";
+import { GlobalShortcuts } from "@/components/GlobalShortcuts";
 import { getOrdoUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -47,8 +50,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Auth0Provider>
           <ThemeProvider>
             {children}
+            <GlobalShortcuts />
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-strong)",
+                  color: "var(--text-1)",
+                  fontSize: "13px",
+                  borderRadius: "10px",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+                },
+                descriptionStyle: {
+                  color: "var(--text-3)",
+                  fontSize: "11px",
+                },
+              }}
+              richColors
+            />
           </ThemeProvider>
         </Auth0Provider>
+        <Analytics />
       </body>
     </html>
   );

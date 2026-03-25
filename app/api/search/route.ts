@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrdoUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req);
+  if (limited) return limited;
+
   const me = await getOrdoUser();
   if (!me) return NextResponse.json({ boards: [], items: [] }, { status: 401 });
 

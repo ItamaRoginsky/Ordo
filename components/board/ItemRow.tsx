@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Trash2, Check } from "lucide-react";
+import { t } from "@/lib/toast";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Item, Column, ColumnValue } from "@prisma/client";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
@@ -71,6 +72,11 @@ export function ItemRow({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
+    if ("completedAt" in patch) {
+      patch.completedAt
+        ? t.success("Task completed", item.name)
+        : t.info("Marked incomplete", item.name);
+    }
     invalidate();
   };
 
@@ -86,6 +92,7 @@ export function ItemRow({
       };
     });
     await fetch(`/api/items/${item.id}`, { method: "DELETE" });
+    t.success("Task deleted");
     invalidate();
   };
 

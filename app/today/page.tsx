@@ -6,6 +6,7 @@ import { format, addDays, subDays, isToday as isTodayFn, isPast, parseISO, isSam
 import { Sun, ChevronLeft, ChevronRight, Plus, X, ChevronDown } from "lucide-react";
 import { AddTaskModal, type NewTask } from "@/components/tasks/AddTaskModal";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
+import { t } from "@/lib/toast";
 
 interface SubItem {
   id: string;
@@ -456,12 +457,14 @@ export default function TodayPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completedAt }),
     });
+    completedAt ? t.success("Task completed", item.name) : t.info("Marked incomplete", item.name);
     queryClient.invalidateQueries({ queryKey: ["today", dateStr] });
     queryClient.invalidateQueries({ queryKey: ["stats"] });
   }
 
   async function deleteItem(id: string) {
     await fetch(`/api/items/${id}`, { method: "DELETE" });
+    t.success("Task deleted");
     queryClient.invalidateQueries({ queryKey: ["today", dateStr] });
   }
 
@@ -509,8 +512,11 @@ export default function TodayPage() {
       }),
     });
     if (res.ok) {
+      t.success("Task added", task.name);
       queryClient.invalidateQueries({ queryKey: ["today", dateStr] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+    } else {
+      t.error("Failed to add task");
     }
   }
 

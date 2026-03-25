@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { t } from "@/lib/toast";
 
 const PRIORITY_BORDER: Record<string, string> = {
   p1: "#ef4444",
@@ -37,7 +38,9 @@ export function DailyGlance() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completedAt: new Date().toISOString() }),
       }),
-    onSuccess: () => {
+    onSuccess: (_data, itemId) => {
+      const item = allItems.find((i: any) => i.id === itemId);
+      t.success("Task completed", item?.name);
       queryClient.invalidateQueries({ queryKey: ["daily-glance"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["today"] });
