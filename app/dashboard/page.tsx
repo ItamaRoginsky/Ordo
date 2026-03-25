@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO, getWeek, differenceInDays } from "date-fns";
+import { format, getWeek } from "date-fns";
 import Link from "next/link";
 import {
   BarChart,
@@ -12,6 +12,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useTheme } from "@/lib/theme";
+import { DailyGlance } from "@/components/dashboard/DailyGlance";
+import { DayProgress } from "@/components/dashboard/DayProgress";
 
 interface StatsData {
   userName: string | null;
@@ -31,6 +33,7 @@ interface StatsData {
     boardColor: string | null;
     priority: string | null;
   }[];
+
   projectProgress: {
     id: string;
     name: string;
@@ -42,14 +45,15 @@ interface StatsData {
     lastActivityAt: string | null;
   }[];
   weeklyVelocity: { day: string; date: string; completed: number }[];
-  todayAgenda: {
-    id: string;
-    name: string;
-    boardName: string;
-    boardColor: string | null;
-    priority: string | null;
-    status: string | null;
-  }[];
+  dayProgress: {
+    total: number;
+    done: number;
+    byPriority: {
+      high:   { done: number; total: number };
+      medium: { done: number; total: number };
+      low:    { done: number; total: number };
+    };
+  };
 }
 
 function getGreeting() {
@@ -59,21 +63,6 @@ function getGreeting() {
   return "Good evening";
 }
 
-const PRIORITY_COLORS_DARK: Record<string, string> = {
-  p1: "#ef4444", p2: "#f97316", p3: "#5b9cf6", p4: "#6b7280",
-  critical: "#ef4444", high: "#f97316", medium: "#f59e0b", low: "#6b7280",
-};
-const PRIORITY_COLORS_LIGHT: Record<string, string> = {
-  p1: "#FF3B30", p2: "#FF9500", p3: "#2563EB", p4: "#C7C7CC",
-  critical: "#FF3B30", high: "#FF9500", medium: "#FF9500", low: "#C7C7CC",
-};
-
-const STATUS_COLORS_DARK: Record<string, string> = {
-  done: "#22c55e", in_progress: "#5b9cf6", stuck: "#ef4444", review: "#a855f7", not_started: "#6b7280",
-};
-const STATUS_COLORS_LIGHT: Record<string, string> = {
-  done: "#34C759", in_progress: "#2563EB", stuck: "#FF3B30", review: "#AF52DE", not_started: "#8A8A8E",
-};
 
 export default function DashboardPage() {
   const { theme } = useTheme();
@@ -83,9 +72,6 @@ export default function DashboardPage() {
     queryFn: () => fetch("/api/stats").then((r) => r.json()),
     refetchInterval: 60_000,
   });
-
-  const PRIORITY_COLORS = isLight ? PRIORITY_COLORS_LIGHT : PRIORITY_COLORS_DARK;
-  const STATUS_COLORS = isLight ? STATUS_COLORS_LIGHT : STATUS_COLORS_DARK;
 
   const chartColors = {
     axis:    isLight ? "#C7C7CC" : "rgba(255,255,255,0.3)",
@@ -176,45 +162,9 @@ export default function DashboardPage() {
           barWidth={completionRate} sub={`${todayDoneCount} done today`} />
       </div>
 
-      {/* Today agenda + Open Projects */}
+      {/* Day Progress + Open Projects */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Today&apos;s agenda</h2>
-            <Link href="/today" className="text-[11px] transition-colors" style={{ color: "var(--chart-primary)", opacity: 0.7 }}>
-              View all →
-            </Link>
-          </div>
-          {data.todayAgenda.length === 0 ? (
-            <p className="text-sm py-4" style={{ color: "var(--text-4)" }}>Nothing planned for today - add tasks in My Day </p>
-          ) : (
-            <div className="space-y-1">
-              {data.todayAgenda.map((item) => (
-                <div key={item.id} className="flex items-center gap-2.5 py-1.5">
-                  <span className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: PRIORITY_COLORS[item.priority ?? ""] ?? "var(--text-4)" }} />
-                  <span className="text-sm flex-1 truncate" style={{ color: "var(--text-2)" }}>{item.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0"
-                    style={{
-                      backgroundColor: `${STATUS_COLORS[item.status ?? ""] ?? "var(--text-4)"}20`,
-                      color: STATUS_COLORS[item.status ?? ""] ?? "var(--text-3)",
-                    }}>
-                    {item.status?.replace("_", " ") ?? "—"}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0"
-                    style={{ backgroundColor: `${item.boardColor ?? "var(--text-4)"}20`, color: "var(--text-3)" }}>
-                    {item.boardName}
-                  </span>
-                </div>
-              ))}
-              {todayCount > 6 && (
-                <Link href="/today" className="text-xs transition-colors block pt-1" style={{ color: "var(--text-3)" }}>
-                  + {todayCount - 6} more
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+        <DayProgress data={data.dayProgress} />
 
         <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
           <h2 className="text-sm font-medium mb-4" style={{ color: "var(--text-2)" }}>Open projects</h2>
@@ -286,31 +236,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
-          <h2 className="text-sm font-medium mb-4" style={{ color: "var(--text-2)" }}>Upcoming deadlines</h2>
-          {data.upcomingDeadlines.length === 0 ? (
-            <p className="text-sm py-8 text-center" style={{ color: "var(--text-4)" }}>No deadlines in the next 14 days</p>
-          ) : (
-            <div className="space-y-2 mt-1">
-              {data.upcomingDeadlines.map((item) => {
-                const daysLeft = differenceInDays(parseISO(item.deadline), new Date());
-                const deadlineColor = daysLeft <= 1 ? "var(--sys-red)" : daysLeft <= 3 ? "var(--sys-orange)" : "var(--text-4)";
-                return (
-                  <div key={item.id} className="flex items-center gap-2.5 py-1">
-                    <span className="text-xs tabular-nums shrink-0 w-14 text-right font-medium" style={{ color: deadlineColor }}>
-                      {daysLeft === 0 ? "today" : daysLeft === 1 ? "tomorrow" : `${daysLeft}d`}
-                    </span>
-                    <span className="text-sm flex-1 truncate" style={{ color: "var(--text-2)" }}>{item.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0"
-                      style={{ backgroundColor: `${item.boardColor ?? "#6b7280"}20`, color: "var(--text-3)" }}>
-                      {item.boardName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <DailyGlance />
       </div>
     </div>
   );

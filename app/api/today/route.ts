@@ -14,12 +14,19 @@ export async function GET(req: NextRequest) {
   const end = new Date(targetDate);
   end.setHours(23, 59, 59, 999);
 
+  // Only pull isToday:true tasks when querying actual today — otherwise they'd leak into every future day
+  const now = new Date();
+  const isActualToday =
+    targetDate.getFullYear() === now.getFullYear() &&
+    targetDate.getMonth() === now.getMonth() &&
+    targetDate.getDate() === now.getDate();
+
   const items = await db.item.findMany({
     where: {
       parentId: null,
       group: { board: { ownerId: me.id } },
       OR: [
-        { isToday: true },
+        ...(isActualToday ? [{ isToday: true }] : []),
         { scheduledDate: { gte: start, lte: end } },
         { completedAt: { gte: start, lte: end } },
       ],

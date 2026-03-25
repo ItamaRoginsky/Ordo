@@ -85,6 +85,31 @@ export async function GET() {
       priority: i.priority ?? null,
     }));
 
+  // Day progress — computed from allItems (same pattern, no extra DB query)
+  const todayItems = allItems.filter(
+    (i) =>
+      i.isToday ||
+      (i.scheduledDate && i.scheduledDate >= todayStart && i.scheduledDate <= todayEnd)
+  );
+  const dayProgress = {
+    total: todayItems.length,
+    done: todayItems.filter((i) => i.completedAt).length,
+    byPriority: {
+      high: {
+        done:  todayItems.filter((i) => i.priority === "p1" && i.completedAt).length,
+        total: todayItems.filter((i) => i.priority === "p1").length,
+      },
+      medium: {
+        done:  todayItems.filter((i) => i.priority === "p2" && i.completedAt).length,
+        total: todayItems.filter((i) => i.priority === "p2").length,
+      },
+      low: {
+        done:  todayItems.filter((i) => (i.priority === "p3" || i.priority === "p4" || !i.priority) && i.completedAt).length,
+        total: todayItems.filter((i) =>  i.priority === "p3" || i.priority === "p4" || !i.priority).length,
+      },
+    },
+  };
+
   // Today's agenda (isToday or scheduledDate = today)
   const todayAgenda = allItems
     .filter(
@@ -186,5 +211,6 @@ export async function GET() {
     weeklyVelocity,
     todayAgenda,
     projectProgress,
+    dayProgress,
   });
 }

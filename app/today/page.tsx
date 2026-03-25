@@ -148,6 +148,7 @@ function SubTaskRow({
 
 function TaskRow({
   item,
+  viewDate,
   onToggleComplete,
   onDelete,
   onUpdate,
@@ -155,6 +156,7 @@ function TaskRow({
   onOpenDetail,
 }: {
   item: TodayItem;
+  viewDate: Date;
   onToggleComplete: (item: TodayItem) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, patch: Record<string, unknown>) => void;
@@ -167,11 +169,14 @@ function TaskRow({
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [subtaskName, setSubtaskName] = useState("");
 
+  const scheduledParsed = item.scheduledDate ? parseISO(item.scheduledDate) : null;
   const isOverdue =
-    item.scheduledDate &&
+    scheduledParsed &&
     !item.completedAt &&
-    isPast(parseISO(item.scheduledDate)) &&
-    !isTodayFn(parseISO(item.scheduledDate));
+    isPast(scheduledParsed) &&
+    !isTodayFn(scheduledParsed);
+  // Hide date badge when the scheduled date is the same as the day being viewed (redundant)
+  const showDateBadge = scheduledParsed && !isSameDay(scheduledParsed, viewDate);
 
   function submitSubtask() {
     const n = subtaskName.trim();
@@ -220,9 +225,9 @@ function TaskRow({
           </div>
         )}
 
-        {item.scheduledDate && (
+        {showDateBadge && (
           <span className="text-[10px] shrink-0" style={{ color: isOverdue ? "var(--sys-red)" : "var(--text-4)" }}>
-            {format(parseISO(item.scheduledDate), "MMM d")}
+            {format(scheduledParsed!, "MMM d")}
           </span>
         )}
 
@@ -367,6 +372,7 @@ function PrioritySection({
             <TaskRow
               key={item.id}
               item={item}
+              viewDate={viewDate}
               onToggleComplete={onToggleComplete}
               onDelete={onDelete}
               onUpdate={onUpdate}
@@ -542,13 +548,21 @@ export default function TodayPage() {
         >
           <ChevronRight size={14} />
         </button>
+        {isCurrentDay && (
+          <span
+            className="text-xs ml-1 px-2 py-0.5 rounded-full"
+            style={{ color: "var(--chart-primary)", background: "var(--accent-subtle)" }}
+          >
+            Today
+          </span>
+        )}
         {!isCurrentDay && (
           <button
             onClick={() => setViewDate(new Date())}
             className="text-xs transition-colors ml-1 px-2 py-0.5 rounded-full"
-            style={{ color: "var(--chart-primary)", background: "var(--accent-subtle)" }}
+            style={{ color: "var(--text-3)", background: "var(--bg-hover)", cursor: "pointer", fontFamily: "inherit", border: "none" }}
           >
-            Today
+            ↩ Today
           </button>
         )}
         {activeItems.length > 0 && (
@@ -639,6 +653,7 @@ export default function TodayPage() {
                     <TaskRow
                       key={item.id}
                       item={item}
+                      viewDate={viewDate}
                       onToggleComplete={toggleComplete}
                       onDelete={deleteItem}
                       onUpdate={updateItem}
