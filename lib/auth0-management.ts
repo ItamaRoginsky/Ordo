@@ -17,6 +17,11 @@ async function getManagementToken(): Promise<string> {
     }),
   });
   const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    throw new Error(
+      `Failed to get Auth0 management token: ${data.error_description ?? data.error ?? res.status}`
+    );
+  }
   return data.access_token;
 }
 
@@ -30,7 +35,7 @@ export async function inviteUser(email: string): Promise<void> {
     },
     body: JSON.stringify({
       email,
-      connection_id: "con_default", // update with your Auth0 connection ID
+      connection_id: "cgr_gs6KbyukaZiJdEiU",
       ttl_sec: 604800, // 7 days
     }),
   });
@@ -58,4 +63,51 @@ export async function unblockUser(auth0Id: string): Promise<void> {
     },
     body: JSON.stringify({ blocked: false }),
   });
+}
+
+export async function changeAuth0UserPassword(auth0Id: string, newPassword: string): Promise<void> {
+  const token = await getManagementToken();
+  const res = await fetch(`https://${domain}/api/v2/users/${encodeURIComponent(auth0Id)}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: newPassword, connection: "Username-Password-Authentication" }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message ?? "Failed to change password");
+  }
+}
+
+export async function createAuth0User({
+  email,
+  password,
+  name,
+}: {
+  email: string;
+  password: string;
+  name: string;
+}): Promise<{ user_id: string }> {
+  const token = await getManagementToken();
+  const res = await fetch(`https://${domain}/api/v2/users`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      connection: "Username-Password-Authentication",
+      email,
+      password,
+      name,
+      email_verified: true,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message ?? "Failed to create Auth0 user");
+  }
+  return data;
 }

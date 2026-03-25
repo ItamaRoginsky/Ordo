@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { UserPlus } from "lucide-react";
 import { InviteModal } from "@/components/admin/InviteModal";
+import { CreateUserModal } from "@/components/admin/CreateUserModal";
+import { ChangePasswordModal } from "@/components/admin/ChangePasswordModal";
 import * as Dialog from "@radix-ui/react-dialog";
 
 interface OrdoUser {
@@ -56,6 +58,8 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [pwdTarget, setPwdTarget] = useState<OrdoUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<OrdoUser | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -134,16 +138,27 @@ export default function AdminUsersPage() {
             ))}
           </div>
         </div>
-        <button
-          onClick={() => setInviteOpen(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-xl font-medium"
-          style={{ background: "var(--chart-primary)", color: "#fff" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
-        >
-          <UserPlus size={14} />
-          Add user
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-xl font-medium"
+            style={{ background: "var(--text-1)", color: "var(--bg-card)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+          >
+            + Create user
+          </button>
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-xl font-medium"
+            style={{ background: "var(--chart-primary)", color: "#fff" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+          >
+            <UserPlus size={14} />
+            Add user
+          </button>
+        </div>
       </div>
 
       {/* Error banner */}
@@ -223,6 +238,15 @@ export default function AdminUsersPage() {
                       {user.isActive ? "Suspend" : "Reactivate"}
                     </button>
                     <button
+                      onClick={() => setPwdTarget(user)}
+                      className="text-[10px] px-2 py-1 rounded-lg transition-colors"
+                      style={{ border: "1px solid var(--border)", color: "var(--text-3)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      Pwd
+                    </button>
+                    <button
                       onClick={() => setDeleteTarget(user)}
                       className="text-[10px] px-2 py-1 rounded-lg transition-colors"
                       style={{ border: "1px solid var(--border)", color: "var(--sys-red)" }}
@@ -240,6 +264,9 @@ export default function AdminUsersPage() {
           );
         })}
       </div>
+
+      {createOpen && <CreateUserModal onClose={() => setCreateOpen(false)} />}
+      {pwdTarget && <ChangePasswordModal user={pwdTarget} onClose={() => setPwdTarget(null)} />}
 
       <InviteModal
         open={inviteOpen}
