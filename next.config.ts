@@ -34,6 +34,8 @@ export default withSentryConfig(config, {
   tunnelRoute: "/monitoring",
 
   // Automatically instrument server components
-  autoInstrumentServerFunctions: true,
-  autoInstrumentMiddleware: false, // we use proxy.ts not middleware
+  webpack: {
+    autoInstrumentServerFunctions: true,
+    autoInstrumentMiddleware: false,
+  },
 });
