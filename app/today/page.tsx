@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, subDays, isToday as isTodayFn, isPast, parseISO, isSameDay } from "date-fns";
-import { Sun, ChevronLeft, ChevronRight, Plus, X, ChevronDown } from "lucide-react";
+import { Sun, ChevronLeft, ChevronRight, Plus, X, ChevronDown, Calendar } from "lucide-react";
 import { AddTaskModal, type NewTask } from "@/components/tasks/AddTaskModal";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 import { t } from "@/lib/toast";
@@ -419,6 +419,53 @@ export default function TodayPage() {
   const [viewDate, setViewDate] = useState(new Date());
   const [completedOpen, setCompletedOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<TodayItem | null>(null);
+  const [gcalConnected, setGcalConnected] = useState<boolean | null>(null);
+  const [gcalExporting, setGcalExporting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/gcal/status").then((r) => r.json()).then((d) => setGcalConnected(d.connected));
+    // Handle redirect back from Google OAuth
+    const params = new URLSearchParams(window.location.search);
+    const gcal = params.get("gcal");
+    if (gcal === "connected") {
+      setGcalConnected(true);
+      t.success("Google Calendar connected!");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (gcal === "error") {
+      t.error("Failed to connect Google Calendar");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  async function exportToGcal() {
+    if (!gcalConnected) {
+      window.location.href = `/api/gcal/auth?returnTo=/today`;
+      return;
+    }
+    setGcalExporting(true);
+    try {
+      const res = await fetch("/api/gcal/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: viewDate.toISOString() }),
+      });
+      const data = await res.json();
+      if (data.error === "not_connected") {
+        setGcalConnected(false);
+        window.location.href = `/api/gcal/auth?returnTo=/today`;
+        return;
+      }
+      if (data.count === 0) {
+        t.info("No tasks to export", "All tasks for this day are already done");
+      } else {
+        t.success(`Exported ${data.count} task${data.count !== 1 ? "s" : ""} to Google Calendar`);
+      }
+    } catch {
+      t.error("Export failed");
+    } finally {
+      setGcalExporting(false);
+    }
+  }
 
   const dateStr = format(viewDate, "yyyy-MM-dd");
   const isCurrentDay = isTodayFn(viewDate);
@@ -533,6 +580,25 @@ export default function TodayPage() {
       <div className="flex items-center gap-3 mb-1">
         <Sun size={20} className="text-[#f59e0b]" />
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>My Day</h1>
+        <div className="flex-1" />
+        {gcalConnected !== null && (
+          <button
+            onClick={exportToGcal}
+            disabled={gcalExporting}
+            className="pill-btn flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all disabled:opacity-50"
+            style={{
+              color: gcalConnected ? "var(--chart-primary)" : "var(--text-3)",
+              border: "1px solid var(--border)",
+              background: "transparent",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            title={gcalConnected ? "Export today's tasks to Google Calendar" : "Connect Google Calendar"}
+          >
+            <Calendar size={13} />
+            {gcalExporting ? "Exporting…" : gcalConnected ? "Export to Calendar" : "Connect Calendar"}
+          </button>
+        )}
       </div>
 
       {/* Date navigation */}

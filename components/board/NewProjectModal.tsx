@@ -10,7 +10,20 @@ import { useRouter } from "next/navigation";
 import { X, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 const ICONS  = ["📋", "🚀", "💡", "🎯", "📊", "🛠️", "📅", "⭐", "🔥", "💼"];
-const COLORS = ["#0073ea", "#e2445c", "#00c875", "#fdab3d", "#a25ddc", "#037f4c", "#ff642e", "#579bfc"];
+const COLORS = [
+  "#A8C5F0", // soft cornflower blue
+  "#F4A7B4", // blush rose
+  "#A8DCC5", // sage mint
+  "#F7C98B", // warm peach
+  "#C5B3E8", // lavender
+  "#A8D8EA", // sky blue
+  "#F7B7A3", // salmon
+  "#B8E0C8", // celadon green
+  "#E8C5E0", // dusty rose
+  "#C8DCB8", // pistachio
+  "#F5D6A8", // butter
+  "#B8C8F0", // periwinkle
+];
 
 const FORMAT_EXAMPLE = {
   name: "Product Roadmap",
@@ -49,7 +62,7 @@ export function NewProjectModal({ onClose }: Props) {
   // manual
   const [name, setName]             = useState("");
   const [icon, setIcon]             = useState("📋");
-  const [color, setColor]           = useState("#0073ea");
+  const [color, setColor]           = useState("#A8C5F0");
 
   // json
   const [jsonText, setJsonText]     = useState("");
@@ -220,8 +233,13 @@ export function NewProjectModal({ onClose }: Props) {
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
-                    className={`w-7 h-7 rounded-full border-2 transition-all ${color === c ? "border-white/70 scale-110" : "border-transparent"}`}
-                    style={{ backgroundColor: c }}
+                    className="w-7 h-7 rounded-full transition-all relative flex items-center justify-center"
+                    style={{
+                      backgroundColor: c,
+                      outline: color === c ? `2px solid ${c}` : "2px solid transparent",
+                      outlineOffset: "2px",
+                      transform: color === c ? "scale(1.15)" : "scale(1)",
+                    }}
                   />
                 ))}
               </div>
