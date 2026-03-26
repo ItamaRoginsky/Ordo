@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Group, Item, Column, ColumnValue } from "@prisma/client";
 import {
@@ -81,6 +81,9 @@ export function GroupRow({
     () => typeof window !== "undefined" && localStorage.getItem(storageKey) === "true"
   );
   const [items, setItems] = useState(group.items);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [draftName, setDraftName] = useState(group.name);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const addInputRef = useRef<HTMLInputElement>(null);
@@ -151,6 +154,32 @@ export function GroupRow({
     },
   });
 
+  const renameGroup = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch(`/api/groups/${group.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error("Failed to rename group");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board", boardId] }),
+  });
+
+  function startRename() {
+    setDraftName(group.name);
+    setIsRenaming(true);
+    setTimeout(() => { renameInputRef.current?.focus(); renameInputRef.current?.select(); }, 0);
+  }
+
+  function commitRename() {
+    setIsRenaming(false);
+    const trimmed = draftName.trim();
+    if (trimmed && trimmed !== group.name) renameGroup.mutate(trimmed);
+    else setDraftName(group.name);
+  }
+
   const deleteGroup = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/groups/${group.id}`, { method: "DELETE" });
@@ -190,9 +219,29 @@ export function GroupRow({
           {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
         </button>
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-        <h3 className="text-sm font-semibold" style={{ color }}>
-          {group.name}
-        </h3>
+        {isRenaming ? (
+          <input
+            ref={renameInputRef}
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitRename(); }
+              if (e.key === "Escape") { setIsRenaming(false); setDraftName(group.name); }
+            }}
+            className="text-sm font-semibold bg-transparent outline-none border-b"
+            style={{ color, borderColor: color, minWidth: 60, maxWidth: 240 }}
+          />
+        ) : (
+          <h3
+            className="text-sm font-semibold cursor-text"
+            style={{ color }}
+            onDoubleClick={startRename}
+            title="Double-click to rename"
+          >
+            {group.name}
+          </h3>
+        )}
         <span className="text-xs" style={{ color: "var(--text-4)" }}>{items.length}</span>
         {items.length > 0 && (() => {
           const done = items.filter((i: any) => i.completedAt).length;
@@ -224,6 +273,17 @@ export function GroupRow({
               style={{ minWidth: 180, background: "var(--bg-popover)", border: "1px solid var(--border-strong)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.24)", padding: 4, zIndex: 50 }}
               sideOffset={6}
             >
+              <DropdownMenu.Item
+                className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg cursor-pointer outline-none transition-colors"
+                style={{ color: "var(--text-2)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                onSelect={startRename}
+              >
+                <Pencil size={13} />
+                Rename group
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
               <DropdownMenu.Item
                 className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 rounded-lg hover:bg-red-500/10 cursor-pointer outline-none transition-colors"
                 onSelect={() => {
