@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Sun, Moon, LogOut, MoreHorizontal, Trash2, Plus, X, Search, Shield } from "lucide-react";
+import { Sun, Moon, LogOut, MoreHorizontal, Trash2, Plus, Search, Shield } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useState, useEffect } from "react";
@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Board, User } from "@prisma/client";
 import { useTheme } from "@/lib/theme";
 import { CommandPalette } from "@/components/search/CommandPalette";
+import { NewProjectModal } from "@/components/board/NewProjectModal";
 
 
 const DOT_COLORS = [
@@ -254,53 +255,8 @@ function NavItem({ href, label, active, prefetchKey, prefetchUrl }: {
   );
 }
 
-const NEW_PROJECT_ICONS = ["📋", "🚀", "💡", "🎯", "📊", "🛠️", "📅", "⭐", "🔥", "💼"];
-const NEW_PROJECT_COLORS = ["#0073ea", "#e2445c", "#00c875", "#fdab3d", "#a25ddc", "#037f4c", "#ff642e", "#579bfc"];
-
 function NewProjectButton() {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [icon, setIcon] = useState("📋");
-  const [color, setColor] = useState("#0073ea");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!open) return;
-    function handler(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/boards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), icon, color }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create project");
-      }
-      const board = await res.json();
-      setOpen(false);
-      setName("");
-      router.push(`/boards/${board.id}`);
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <>
@@ -319,59 +275,7 @@ function NewProjectButton() {
         <Plus size={12} />
       </button>
 
-      {open && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setOpen(false)}>
-          <div className="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>New project</h2>
-              <button onClick={() => setOpen(false)} style={{ color: "var(--text-4)" }} className="transition-colors"
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}>
-                <X size={17} />
-              </button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Name</label>
-                <input
-                  type="text" placeholder="e.g. Product Roadmap" value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                  style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-1)" }}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Icon</label>
-                <div className="flex gap-2 flex-wrap">
-                  {NEW_PROJECT_ICONS.map((i) => (
-                    <button key={i} type="button" onClick={() => setIcon(i)}
-                      className="w-9 h-9 text-lg rounded-lg flex items-center justify-center"
-                      style={{ border: icon === i ? "1px solid var(--chart-primary)" : "1px solid var(--border)", background: icon === i ? "var(--accent-subtle)" : "transparent" }}>
-                      {i}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Color</label>
-                <div className="flex gap-2">
-                  {NEW_PROJECT_COLORS.map((c) => (
-                    <button key={c} type="button" onClick={() => setColor(c)}
-                      className="w-7 h-7 rounded-full" style={{ background: c, border: color === c ? "2px solid var(--text-1)" : "2px solid transparent" }} />
-                  ))}
-                </div>
-              </div>
-              {error && <p style={{ color: "#e2445c", fontSize: 12 }}>{error}</p>}
-              <button type="submit" disabled={loading || !name.trim()}
-                className="w-full py-2 rounded-lg text-sm font-medium transition-opacity"
-                style={{ background: "var(--chart-primary)", color: "#fff", opacity: loading || !name.trim() ? 0.5 : 1 }}>
-                {loading ? "Creating…" : "Create project"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {open && <NewProjectModal onClose={() => setOpen(false)} />}
     </>
   );
 }
