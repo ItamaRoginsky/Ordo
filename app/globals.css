@@ -122,6 +122,33 @@ body {
   opacity: 0.8;
 }
 
+/* ── New-project modal — layout via CSS, no JS / useIsMobile needed ──────── */
+.np-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+.np-card {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 24px;
+}
+@media (max-width: 767px) {
+  .np-overlay { align-items: flex-end; }
+  .np-card {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
+
 /* ── Board card hover (CSS-only — no JS event handlers in Server Components) */
 .board-card {
   transition: border-color 0.15s ease;

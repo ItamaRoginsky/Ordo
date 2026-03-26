@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 const ICONS  = ["📋", "🚀", "💡", "🎯", "📊", "🛠️", "📅", "⭐", "🔥", "💼"];
 const COLORS = ["#0073ea", "#e2445c", "#00c875", "#fdab3d", "#a25ddc", "#037f4c", "#ff642e", "#579bfc"];
@@ -38,7 +37,6 @@ type Mode = "manual" | "json";
 export function CreateBoardButton() {
   const [open, setOpen]             = useState(false);
   const [mode, setMode]             = useState<Mode>("manual");
-  const isMobile                    = useIsMobile();
 
   const [name, setName]             = useState("");
   const [icon, setIcon]             = useState("📋");
@@ -126,11 +124,8 @@ export function CreateBoardButton() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const canSubmitJson = !!jsonText.trim() && !jsonError;
-
   return (
     <>
-      {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-3.5 py-2 text-sm rounded-lg transition-colors"
@@ -142,37 +137,18 @@ export function CreateBoardButton() {
         New project
       </button>
 
-      {/* Modal — centered on desktop, bottom-sheet on mobile */}
       {open && (
-        <div
-          className="fixed inset-0 z-50"
-          style={{
-            background:     "rgba(0,0,0,0.6)",
-            display:        "flex",
-            alignItems:     isMobile ? "flex-end" : "center",
-            justifyContent: "center",
-          }}
-          onClick={resetAndClose}
-        >
+        /* np-overlay / np-card classes live in globals.css and handle
+           desktop (centered) vs mobile (bottom-sheet) via @media — no JS needed */
+        <div className="np-overlay" onClick={resetAndClose}>
           <div
-            className="w-full shadow-2xl"
-            style={{
-              background:    "var(--bg-card)",
-              border:        "1px solid var(--border-strong)",
-              borderRadius:  isMobile ? "20px 20px 0 0" : "16px",
-              maxWidth:      isMobile ? "100%" : "440px",
-              maxHeight:     "90dvh",
-              overflowY:     "auto",
-              padding:       "24px",
-              paddingBottom: isMobile ? "max(24px, env(safe-area-inset-bottom))" : "24px",
-            }}
+            className="np-card shadow-2xl"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>
-                New project
-              </h2>
+              <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>New project</h2>
               <button
                 onClick={resetAndClose}
                 style={{ color: "var(--text-4)" }}
@@ -183,7 +159,7 @@ export function CreateBoardButton() {
               </button>
             </div>
 
-            {/* ── Tab switcher — always visible on all screen sizes ── */}
+            {/* Tab switcher */}
             <div
               className="flex rounded-lg p-0.5 mb-5 text-sm"
               style={{ background: "var(--bg-input)", border: "1px solid var(--border)" }}
@@ -195,9 +171,9 @@ export function CreateBoardButton() {
                   onClick={() => { setMode(m); setError(""); }}
                   className="flex-1 py-1.5 rounded-md font-medium transition-all"
                   style={{
-                    background: mode === m ? "var(--bg-card)"     : "transparent",
-                    color:      mode === m ? "var(--text-1)"      : "var(--text-3)",
-                    boxShadow:  mode === m ? "var(--card-shadow)"  : "none",
+                    background: mode === m ? "var(--bg-card)"    : "transparent",
+                    color:      mode === m ? "var(--text-1)"     : "var(--text-3)",
+                    boxShadow:  mode === m ? "var(--card-shadow)" : "none",
                   }}
                 >
                   {m === "manual" ? "Manual" : "From JSON"}
@@ -219,7 +195,6 @@ export function CreateBoardButton() {
                     onChange={(e) => setName(e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm outline-none"
                     style={{ background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-1)" }}
-                    autoFocus={!isMobile}
                   />
                 </div>
 
@@ -265,20 +240,14 @@ export function CreateBoardButton() {
                 {error && <p className="text-xs" style={{ color: "#e2445c" }}>{error}</p>}
 
                 <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={resetAndClose}
+                  <button type="button" onClick={resetAndClose}
                     className="flex-1 px-4 py-2.5 text-sm rounded-lg"
-                    style={{ color: "var(--text-3)", border: "1px solid var(--border)" }}
-                  >
+                    style={{ color: "var(--text-3)", border: "1px solid var(--border)" }}>
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading || !name.trim()}
+                  <button type="submit" disabled={loading || !name.trim()}
                     className="flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-40"
-                    style={{ background: "var(--chart-primary)" }}
-                  >
+                    style={{ background: "var(--chart-primary)" }}>
                     {loading ? "Creating…" : "Create project"}
                   </button>
                 </div>
@@ -305,7 +274,7 @@ export function CreateBoardButton() {
                   </div>
 
                   <textarea
-                    rows={isMobile ? 7 : 9}
+                    rows={9}
                     placeholder={'{\n  "name": "My Project",\n  "groups": [...]\n}'}
                     value={jsonText}
                     onChange={(e) => setJsonText(e.target.value)}
@@ -317,7 +286,6 @@ export function CreateBoardButton() {
                       color:      "var(--text-1)",
                       lineHeight: 1.6,
                     }}
-                    autoFocus={!isMobile}
                   />
 
                   {jsonText && jsonError && (
@@ -325,52 +293,34 @@ export function CreateBoardButton() {
                   )}
                 </div>
 
-                {/* Format reference — collapsible */}
                 {showFormat && (
                   <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-                    <div
-                      className="flex items-center justify-between px-3 py-2"
-                      style={{ background: "var(--bg-popover)", borderBottom: "1px solid var(--border)" }}
-                    >
-                      <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
-                        Format reference
-                      </span>
-                      <button
-                        type="button"
-                        onClick={copyFormat}
+                    <div className="flex items-center justify-between px-3 py-2"
+                      style={{ background: "var(--bg-popover)", borderBottom: "1px solid var(--border)" }}>
+                      <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Format reference</span>
+                      <button type="button" onClick={copyFormat}
                         className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
                         style={{
                           background: copied ? "var(--accent-subtle)" : "var(--bg-hover)",
                           color:      copied ? "var(--chart-primary)" : "var(--text-2)",
                           border:     "1px solid var(--border)",
-                        }}
-                      >
+                        }}>
                         {copied ? <Check size={11} /> : <Copy size={11} />}
                         {copied ? "Copied!" : "Copy"}
                       </button>
                     </div>
-                    <pre
-                      className="text-xs overflow-x-auto px-3 py-3 font-mono"
-                      style={{
-                        background: "var(--bg-input)",
-                        color:      "var(--text-2)",
-                        lineHeight: 1.65,
-                        maxHeight:  180,
-                        overflowY:  "auto",
-                      }}
-                    >
+                    <pre className="text-xs overflow-x-auto px-3 py-3 font-mono"
+                      style={{ background: "var(--bg-input)", color: "var(--text-2)", lineHeight: 1.65, maxHeight: 180, overflowY: "auto" }}>
                       {FORMAT_STR}
                     </pre>
-                    <div
-                      className="px-3 py-2 space-y-0.5"
-                      style={{ background: "var(--bg-popover)", borderTop: "1px solid var(--border)" }}
-                    >
+                    <div className="px-3 py-2 space-y-0.5"
+                      style={{ background: "var(--bg-popover)", borderTop: "1px solid var(--border)" }}>
                       {[
                         ["name",                  "string — required"],
                         ["icon",                  "emoji — optional"],
                         ["color",                 "hex color — optional"],
                         ["groups[].name",         "string — optional"],
-                        ["groups[].color",        "hex color — optional"],
+                        ["groups[].color",         "hex color — optional"],
                         ["items[].priority",      '"high" | "medium" | "low"'],
                         ["items[].scheduledDate", '"YYYY-MM-DD" — optional'],
                         ["items[].deadline",      '"YYYY-MM-DD" — optional'],
@@ -387,20 +337,14 @@ export function CreateBoardButton() {
                 {error && <p className="text-xs" style={{ color: "#e2445c" }}>{error}</p>}
 
                 <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={resetAndClose}
+                  <button type="button" onClick={resetAndClose}
                     className="flex-1 px-4 py-2.5 text-sm rounded-lg"
-                    style={{ color: "var(--text-3)", border: "1px solid var(--border)" }}
-                  >
+                    style={{ color: "var(--text-3)", border: "1px solid var(--border)" }}>
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading || !canSubmitJson}
+                  <button type="submit" disabled={loading || !jsonText.trim() || !!jsonError}
                     className="flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-40"
-                    style={{ background: "var(--chart-primary)" }}
-                  >
+                    style={{ background: "var(--chart-primary)" }}>
                     {loading ? "Importing…" : "Create from JSON"}
                   </button>
                 </div>
