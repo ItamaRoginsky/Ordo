@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { CreateBoardButton } from "@/components/board/CreateBoardButton";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function BoardsPage() {
   const user = await getOrdoUser();
   const boards = user
