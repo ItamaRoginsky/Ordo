@@ -179,7 +179,7 @@ export function AppShellClient({ children, boards, user }: AppShellClientProps) 
                       width: 9,
                       height: 9,
                       borderRadius: 2,
-                      background: board.color ?? "#5b9cf6",
+                      background: board.color ?? "#9EC5F7",
                       flexShrink: 0,
                     }}
                   />

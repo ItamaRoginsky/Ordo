@@ -112,7 +112,7 @@ export function BoardView({ board }: { board: BoardWithData }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const GROUP_ACCENT_COLORS = [
-    "#5b9cf6", "#34d399", "#f59e0b", "#f87171", "#a78bfa", "#38bdf8",
+    "#9EC5F7", "#BFB0EE", "#F0A8CC", "#F2BAA4", "#9ED4B4", "#8ED2CA",
   ];
 
   const addGroup = useMutation({

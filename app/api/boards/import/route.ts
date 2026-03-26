@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       data: {
         name: name.trim(),
         icon: typeof icon === "string" ? icon : "📋",
-        color: typeof color === "string" ? color : "#0073ea",
+        color: typeof color === "string" ? color : "#9EC5F7",
         ownerId: me.id,
         type: "project",
       },
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     for (let gi = 0; gi < rawGroups.length; gi++) {
       const g = rawGroups[gi] as Record<string, unknown>;
       const groupName  = typeof g.name  === "string" ? g.name.trim()  : `Group ${gi + 1}`;
-      const groupColor = typeof g.color === "string" ? g.color        : "#579bfc";
+      const groupColor = typeof g.color === "string" ? g.color        : "#9EC5F7";
 
       const group = await tx.group.create({
         data: { boardId: b.id, name: groupName, color: groupColor, position: gi },
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     if (rawGroups.length === 0) {
       await tx.group.create({
-        data: { boardId: b.id, name: "New Group", position: 0, color: "#579bfc" },
+        data: { boardId: b.id, name: "New Group", position: 0, color: "#9EC5F7" },
       });
     }
 

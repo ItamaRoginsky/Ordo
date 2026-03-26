@@ -90,7 +90,7 @@ export function GroupRow({
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const rowGrid = isMobile ? MOBILE_ROW_GRID : BOARD_ROW_GRID;
-  const color = group.color ?? "#5b9cf6";
+  const color = group.color ?? "#9EC5F7";
 
   const prevGroupItems = useRef(group.items);
   useEffect(() => {

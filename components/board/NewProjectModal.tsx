@@ -10,29 +10,32 @@ import { useRouter } from "next/navigation";
 import { X, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 const ICONS  = ["📋", "🚀", "💡", "🎯", "📊", "🛠️", "📅", "⭐", "🔥", "💼"];
+
+// Pastel palette — designed for dark & light modes:
+// high lightness (76-82%) + moderate saturation (55-75%) = soft but visible
 const COLORS = [
-  "#A8C5F0", // soft cornflower blue
-  "#F4A7B4", // blush rose
-  "#A8DCC5", // sage mint
-  "#F7C98B", // warm peach
-  "#C5B3E8", // lavender
-  "#A8D8EA", // sky blue
-  "#F7B7A3", // salmon
-  "#B8E0C8", // celadon green
-  "#E8C5E0", // dusty rose
-  "#C8DCB8", // pistachio
-  "#F5D6A8", // butter
-  "#B8C8F0", // periwinkle
+  "#9EC5F7", // sky blue
+  "#A8B4F5", // periwinkle
+  "#BFB0EE", // lavender
+  "#D4AAEC", // orchid
+  "#F0A8CC", // blush
+  "#F2BAA4", // peach
+  "#F2DBA0", // honey
+  "#C4E8A4", // pistachio
+  "#9ED4B4", // sage
+  "#8ED2CA", // seafoam
+  "#A4D6EE", // mist
+  "#D0A8E0", // mauve
 ];
 
 const FORMAT_EXAMPLE = {
   name: "Product Roadmap",
   icon: "🚀",
-  color: "#0073ea",
+  color: "#9EC5F7",
   groups: [
     {
       name: "Backlog",
-      color: "#579bfc",
+      color: "#A4D6EE",
       items: [
         {
           name: "Design new landing page",
@@ -43,8 +46,8 @@ const FORMAT_EXAMPLE = {
         },
       ],
     },
-    { name: "In Progress", color: "#fdab3d", items: [] },
-    { name: "Done",        color: "#00c875", items: [] },
+    { name: "In Progress", color: "#F2DBA0", items: [] },
+    { name: "Done",        color: "#9ED4B4", items: [] },
   ],
 };
 
@@ -62,7 +65,7 @@ export function NewProjectModal({ onClose }: Props) {
   // manual
   const [name, setName]             = useState("");
   const [icon, setIcon]             = useState("📋");
-  const [color, setColor]           = useState("#A8C5F0");
+  const [color, setColor]           = useState("#9EC5F7");
 
   // json
   const [jsonText, setJsonText]     = useState("");
@@ -224,21 +227,28 @@ export function NewProjectModal({ onClose }: Props) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>
-                Color
-              </label>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                  Color
+                </label>
+                <span
+                  className="inline-block w-4 h-4 rounded-full border border-white/10"
+                  style={{ backgroundColor: color }}
+                />
+              </div>
+              <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
                 {COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
-                    className="w-7 h-7 rounded-full transition-all relative flex items-center justify-center"
+                    className="w-full aspect-square rounded-full transition-all"
                     style={{
                       backgroundColor: c,
-                      outline: color === c ? `2px solid ${c}` : "2px solid transparent",
-                      outlineOffset: "2px",
-                      transform: color === c ? "scale(1.15)" : "scale(1)",
+                      outline: color === c ? `2.5px solid ${c}` : "2.5px solid transparent",
+                      outlineOffset: "2.5px",
+                      transform: color === c ? "scale(1.18)" : "scale(1)",
+                      boxShadow: color === c ? `0 0 8px ${c}55` : "none",
                     }}
                   />
                 ))}

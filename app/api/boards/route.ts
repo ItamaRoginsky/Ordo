@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       ],
     });
     await tx.group.create({
-      data: { boardId: b.id, name: "New Group", position: 0, color: "#579bfc" },
+      data: { boardId: b.id, name: "New Group", position: 0, color: "#9EC5F7" },
     });
     return b;
   });

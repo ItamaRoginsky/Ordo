@@ -14,8 +14,8 @@ import { NewProjectModal } from "@/components/board/NewProjectModal";
 
 
 const DOT_COLORS = [
-  "#5b9cf6", "#34d399", "#f59e0b", "#f87171", "#a78bfa",
-  "#38bdf8", "#fb923c", "#e879f9",
+  "#9EC5F7", "#BFB0EE", "#F0A8CC", "#F2BAA4",
+  "#9ED4B4", "#8ED2CA", "#A4D6EE", "#D0A8E0",
 ];
 
 interface SidebarProps {

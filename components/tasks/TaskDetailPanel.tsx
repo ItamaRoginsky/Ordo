@@ -336,7 +336,7 @@ export function TaskDetailPanel({
         >
           <div
             className="w-2 h-2 rounded-sm flex-shrink-0"
-            style={{ background: item.group.board.color ?? "#5b9cf6" }}
+            style={{ background: item.group.board.color ?? "#9EC5F7" }}
           />
           {item.group.board.name}
         </div>

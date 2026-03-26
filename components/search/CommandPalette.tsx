@@ -163,7 +163,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
                     background: "var(--bg-active)",
                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                   }}>
-                    <div style={{ width: 9, height: 9, borderRadius: 2, background: board.color ?? "#5b9cf6" }} />
+                    <div style={{ width: 9, height: 9, borderRadius: 2, background: board.color ?? "#9EC5F7" }} />
                   </div>
                   <span style={{ flex: 1, fontSize: 13, color: "var(--text-1)" }}>
                     {highlight(board.name, query)}
