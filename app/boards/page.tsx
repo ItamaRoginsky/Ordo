@@ -27,10 +27,8 @@ export default async function BoardsPage() {
             <Link
               key={board.id}
               href={`/boards/${board.id}`}
-              className="flex items-center gap-3 p-4 rounded-xl transition-all"
+              className="board-card flex items-center gap-3 p-4"
               style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)", borderRadius: "var(--radius-card)" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-strong)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}
             >
               <span className="text-xl">{board.icon ?? "📋"}</span>
               <span className="font-medium text-sm truncate" style={{ color: "var(--text-2)" }}>{board.name}</span>

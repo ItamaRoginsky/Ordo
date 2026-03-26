@@ -122,6 +122,14 @@ body {
   opacity: 0.8;
 }
 
+/* ── Board card hover (CSS-only — no JS event handlers in Server Components) */
+.board-card {
+  transition: border-color 0.15s ease;
+}
+.board-card:hover {
+  border-color: var(--border-strong) !important;
+}
+
 /* ── Mobile base rules ─────────────────────────────────────────────────── */
 html,
 body {
