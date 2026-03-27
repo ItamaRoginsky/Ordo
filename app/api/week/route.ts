@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         name: true,
+        color: true,
         groups: { select: { id: true }, orderBy: { position: "asc" }, take: 1 },
       },
     }),
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
     items,
     weekStart: weekStart.toISOString(),
     inboxGroupId,
-    inboxBoard: inboxBoard ? { id: inboxBoard.id, name: inboxBoard.name } : null,
+    inboxBoard: inboxBoard ? { id: inboxBoard.id, name: inboxBoard.name, color: inboxBoard.color } : null,
     projects,
   }, { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" } });
 }

@@ -326,7 +326,7 @@ function PrioritySection({
   onOpenDetail: (item: TodayItem) => void;
   onAddTask: (task: NewTask) => Promise<void>;
   projects: { id: string; name: string; color: string | null; icon: string | null }[];
-  inboxProject: { id: string; name: string } | null;
+  inboxProject: { id: string; name: string; color?: string | null } | null;
   viewDate: Date;
 }) {
   const storageKey = `ordo-today-collapsed-${group.key}`;
@@ -473,7 +473,7 @@ export default function TodayPage() {
   const { data, isLoading } = useQuery<{
     items: TodayItem[];
     inboxGroupId: string | null;
-    inboxBoard: { id: string; name: string } | null;
+    inboxBoard: { id: string; name: string; color: string | null } | null;
     projects: { id: string; name: string; color: string | null; icon: string | null }[];
   }>({
     queryKey: ["today", dateStr],

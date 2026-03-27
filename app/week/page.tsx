@@ -161,7 +161,7 @@ function DayColumn({
   onAddTask: (task: NewTask, date: Date) => Promise<void>;
   onOpenDetail: (item: WeekItem) => void;
   projects: { id: string; name: string; color: string | null; icon: string | null }[];
-  inboxBoard: { id: string; name: string } | null;
+  inboxBoard: { id: string; name: string; color: string | null } | null;
   overDate: string | null;
 }) {
   const [showModal, setShowModal] = useState(false);
@@ -309,7 +309,7 @@ export default function WeekPage() {
   const { data, isLoading } = useQuery<{
     items: WeekItem[];
     inboxGroupId: string | null;
-    inboxBoard: { id: string; name: string } | null;
+    inboxBoard: { id: string; name: string; color: string | null } | null;
     projects: { id: string; name: string; color: string | null; icon: string | null }[];
   }>({
     queryKey: ["week", startStr],

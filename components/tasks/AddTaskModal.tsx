@@ -39,7 +39,7 @@ interface AddTaskModalProps {
   defaultProjectId?: string;
   defaultPriority?: string;
   projects: { id: string; name: string; color: string | null; icon: string | null }[];
-  inboxProject: { id: string; name: string } | null;
+  inboxProject: { id: string; name: string; color?: string | null } | null;
   onClose: () => void;
   onSave: (task: NewTask) => Promise<void>;
   compact?: boolean;
@@ -252,7 +252,7 @@ export function AddTaskModal({
   }, []);
 
   const allProjects = [
-    ...(inboxProject ? [{ id: inboxProject.id, name: inboxProject.name, color: "#6b7280", icon: "📥" }] : []),
+    ...(inboxProject ? [{ id: inboxProject.id, name: inboxProject.name, color: inboxProject.color ?? "#9EC5F7", icon: "📥" }] : []),
     ...projects,
   ];
 
@@ -355,7 +355,7 @@ export function AddTaskModal({
           </Popover.Trigger>
           <Popover.Portal>
             <Popover.Content
-              className="rounded-xl shadow-2xl z-[60] w-64"
+              className="rounded-xl shadow-2xl z-[400] w-64"
               style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
               sideOffset={6}
             >
@@ -379,7 +379,7 @@ export function AddTaskModal({
           </Popover.Trigger>
           <Popover.Portal>
             <Popover.Content
-              className="rounded-xl shadow-2xl z-[60]"
+              className="rounded-xl shadow-2xl z-[400]"
               style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
               sideOffset={6}
             >
@@ -432,7 +432,7 @@ export function AddTaskModal({
           </Popover.Trigger>
           <Popover.Portal>
             <Popover.Content
-              className="rounded-xl shadow-2xl z-[60] p-1.5 w-48"
+              className="rounded-xl shadow-2xl z-[400] p-1.5 w-48"
               style={{ background: "var(--bg-popover)", border: "1px solid var(--border-strong)" }}
               sideOffset={6}
               align="start"
