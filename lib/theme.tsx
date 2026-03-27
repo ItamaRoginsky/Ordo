@@ -19,13 +19,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = useCallback((e: React.MouseEvent) => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
 
-    // Use the button's centre as the circle origin — more precise than the
-    // raw cursor coordinates which vary depending on where inside the button
-    // the user clicked.
+    // Button centre in viewport coordinates — the circle expands from here
     const btn  = e.currentTarget as HTMLElement
     const rect = btn.getBoundingClientRect()
-    const x    = Math.round(rect.left + rect.width  / 2)
-    const y    = Math.round(rect.top  + rect.height / 2)
+    const x    = rect.left + rect.width  / 2
+    const y    = rect.top  + rect.height / 2
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.setAttribute('data-theme', next)
@@ -34,14 +32,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // New theme's page background colour fills the expanding disc
-    const newBg = next === 'dark' ? '#111111' : '#F2F2F7'
-
-    // Radius large enough to reach the farthest viewport corner from the origin
+    const newBg  = next === 'dark' ? '#111111' : '#F2F2F7'
     const radius = Math.hypot(
       Math.max(x, window.innerWidth  - x),
       Math.max(y, window.innerHeight - y),
     ) + 32
+
+    // Inject a named @keyframes rule with the exact origin baked in.
+    // A CSS *animation* fires as soon as the element is in the DOM and cannot
+    // be silently coalesced away by the browser the way a CSS *transition* can
+    // when both start and end values are written in the same JS task — which
+    // is what caused the animation to never play on Chrome/Windows.
+    const id      = `ordo-reveal-${Date.now()}`
+    const styleEl = document.createElement('style')
+    styleEl.textContent =
+      `@keyframes ${id}{` +
+        `from{clip-path:circle(0px at ${x}px ${y}px)}` +
+        `to{clip-path:circle(${radius}px at ${x}px ${y}px)}` +
+      `}`
+    document.head.appendChild(styleEl)
 
     const clip = document.createElement('div')
     Object.assign(clip.style, {
@@ -49,39 +58,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       inset:         '0',
       zIndex:        '99999',
       background:    newBg,
-      clipPath:      `circle(0px at ${x}px ${y}px)`,
       pointerEvents: 'none',
+      animation:     `${id} 550ms ease-in forwards`,
     })
     document.body.appendChild(clip)
 
-    // Force the browser to commit the initial clip-path before we add the
-    // transition — without this reflow the browser may merge both style writes
-    // into a single paint and skip the animation entirely (the desktop bug).
-    void clip.offsetWidth
-
-    // CSS transition is more cross-browser for clip-path than the WAAPI
-    // (Safari on macOS had incomplete WAAPI clip-path interpolation support).
-    clip.style.transition = 'clip-path 550ms ease-in'
-    clip.style.clipPath   = `circle(${radius}px at ${x}px ${y}px)`
-
-    // Switch theme once the disc covers the whole screen so the swap is hidden.
-    // The `settled` flag prevents double-firing if both transitionend and the
-    // safety-net timeout happen to race.
+    // Commit the theme change once the disc covers the screen, then clean up.
+    // `settled` prevents the animationend listener and the safety-net timeout
+    // from both firing.
     let settled = false
-    const finish = () => {
+    const commit = () => {
       if (settled) return
       settled = true
-      clip.removeEventListener('transitionend', finish)
+      clip.removeEventListener('animationend', commit)
       document.documentElement.setAttribute('data-theme', next)
       localStorage.setItem('ordo-theme', next)
       setTheme(next)
-      // Two rAFs: first lets React schedule the repaint, second lets it flush
-      requestAnimationFrame(() => requestAnimationFrame(() => clip.remove()))
+      // Two rAFs so React's repaint is flushed before we pull the overlay away
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        clip.remove()
+        styleEl.remove()
+      }))
     }
 
-    clip.addEventListener('transitionend', finish)
-    // Safety-net in case transitionend never fires (e.g. tab backgrounded)
-    setTimeout(finish, 700)
+    clip.addEventListener('animationend', commit)
+    setTimeout(commit, 700) // safety-net (tab hidden, slow device, etc.)
   }, [theme])
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
