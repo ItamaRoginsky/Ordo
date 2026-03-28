@@ -26,7 +26,10 @@ export async function GET(req: NextRequest) {
             board: { select: { id: true, name: true, color: true, icon: true } },
           },
         },
-        subItems: { select: { id: true, completedAt: true } },
+        subItems: {
+          orderBy: { position: "asc" },
+          select: { id: true, name: true, completedAt: true, priority: true },
+        },
       },
       orderBy: { position: "asc" },
     }),

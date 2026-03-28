@@ -32,8 +32,12 @@ export async function GET(req: NextRequest) {
       },
       include: {
         columnValues: true,
+        subItems: {
+          orderBy: { position: "asc" },
+          select: { id: true, name: true, completedAt: true, priority: true },
+        },
         group: {
-          include: { board: { select: { id: true, name: true, color: true } } },
+          include: { board: { select: { id: true, name: true, color: true, icon: true } } },
         },
       },
       orderBy: { position: "asc" },

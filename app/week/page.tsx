@@ -37,9 +37,13 @@ interface WeekItem {
   scheduledDate: string | null;
   completedAt: string | null;
   priority: string | null;
+  description: string | null;
+  deadline: string | null;
+  category: string | null;
   groupId: string;
-  group: { board: { id: string; name: string; color: string | null } };
+  group: { board: { id: string; name: string; color: string | null; icon: string | null } };
   columnValues: { columnId: string; value: string }[];
+  subItems: { id: string; name: string; completedAt: string | null; priority: string | null }[];
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -286,6 +290,7 @@ export default function WeekPage() {
     const isTodayDate = isToday(newDate);
 
     // Optimistic update
+    const previous = queryClient.getQueryData(["week", startStr]);
     queryClient.setQueryData(["week", startStr], (old: any) => {
       if (!old) return old;
       return {
@@ -296,12 +301,16 @@ export default function WeekPage() {
       };
     });
 
-    await fetch(`/api/items/${itemId}`, {
+    const res = await fetch(`/api/items/${itemId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scheduledDate: newScheduled, isToday: isTodayDate }),
     });
-    queryClient.invalidateQueries({ queryKey: ["week", startStr] });
+    if (!res.ok) {
+      queryClient.setQueryData(["week", startStr], previous);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["week", startStr] });
+    }
   }
 
   const startStr = format(weekStart, "yyyy-MM-dd");
@@ -473,11 +482,7 @@ export default function WeekPage() {
         <TaskDetailModal
           item={{
             ...detailItem,
-            description: null,
-            deadline: null,
-            category: null,
-            subItems: [],
-            group: { ...detailItem.group, board: { ...detailItem.group.board, icon: null } },
+            group: { ...detailItem.group, board: { ...detailItem.group.board } },
           }}
           onClose={() => setDetailItem(null)}
           onUpdate={async (id, patch) => {

@@ -158,7 +158,7 @@ function RightPanel({ item, onUpdate, customFields, customValues, getCustomValue
                 {field.type === "checkbox" ? (
                   <input type="checkbox" checked={Boolean(val)} readOnly className="w-4 h-4 rounded accent-[#5b9cf6]" />
                 ) : field.type === "url" && val ? (
-                  <a href={String(val)} target="_blank" rel="noopener noreferrer"
+                  <a href={/^https?:\/\//i.test(String(val)) ? String(val) : `https://${String(val)}`} target="_blank" rel="noopener noreferrer"
                     className="text-sm flex items-center gap-1" style={{ color: "var(--chart-primary)" }}>
                     <ExternalLink size={11} />
                     {String(val).replace(/^https?:\/\//, "").slice(0, 20)}…

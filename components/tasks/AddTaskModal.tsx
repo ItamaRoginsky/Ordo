@@ -262,17 +262,20 @@ export function AddTaskModal({
   async function handleSubmit() {
     if (!name.trim() || saving) return;
     setSaving(true);
-    await onSave({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      scheduledDate: scheduledDate ?? undefined,
-      priority,
-      category: category.trim() || undefined,
-      projectId,
-      isToday: isDateToday,
-    });
-    setSaving(false);
-    onClose();
+    try {
+      await onSave({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        scheduledDate: scheduledDate ?? undefined,
+        priority,
+        category: category.trim() || undefined,
+        projectId,
+        isToday: isDateToday,
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   const card = (

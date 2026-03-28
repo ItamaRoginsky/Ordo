@@ -51,7 +51,7 @@ interface MonthItem {
   group: {
     board: { id: string; name: string; color: string | null; icon: string | null };
   };
-  subItems: { id: string; completedAt: string | null }[];
+  subItems: { id: string; name: string; completedAt: string | null; priority: string | null }[];
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -415,6 +415,7 @@ export default function MonthPage() {
     const newScheduled = startOfDay(newDate).toISOString();
 
     // Optimistic update
+    const previous = queryClient.getQueryData(["month", year, month]);
     queryClient.setQueryData(["month", year, month], (old: any) =>
       old && ({
         ...old,
@@ -424,7 +425,7 @@ export default function MonthPage() {
       })
     );
 
-    await fetch(`/api/items/${item.id}`, {
+    const res = await fetch(`/api/items/${item.id}`, {
       method:  "PATCH",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
@@ -432,7 +433,11 @@ export default function MonthPage() {
         isToday:       isToday(newDate),
       }),
     });
-    queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+    if (!res.ok) {
+      queryClient.setQueryData(["month", year, month], previous);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -625,7 +630,6 @@ export default function MonthPage() {
           item={{
             ...detailItem,
             columnValues: [],
-            subItems: detailItem.subItems.map((s) => ({ ...s, name: "", priority: null })),
             group: {
               ...detailItem.group,
               board: { ...detailItem.group.board },
