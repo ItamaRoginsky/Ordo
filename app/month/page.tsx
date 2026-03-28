@@ -378,6 +378,7 @@ export default function MonthPage() {
 
   const grid         = useMemo(() => buildGrid(viewDate), [viewDate]);
   const weeksInGrid  = grid.length / 7;
+  const rowHeight    = Math.max(90, Math.floor(600 / weeksInGrid));
   const isNowMonth   = isSameMonth(viewDate, today);
 
   // Group items by "yyyy-MM-dd"
@@ -607,9 +608,7 @@ export default function MonthPage() {
             style={{
               display:             "grid",
               gridTemplateColumns: "repeat(7, 1fr)",
-              gridAutoRows:        `minmax(${Math.max(90, Math.floor(
-                (typeof window !== "undefined" ? window.innerHeight - 200 : 600) / weeksInGrid
-              )}px, auto)`,
+              gridAutoRows:        `minmax(${rowHeight}px, auto)`,
               gap:                 4,
               flex:                1,
               minHeight:           0,
