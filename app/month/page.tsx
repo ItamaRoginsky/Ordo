@@ -666,6 +666,8 @@ export default function MonthPage() {
         <TaskDetailModal
           item={{
             ...detailItem,
+            columnValues: [],
+            subItems: detailItem.subItems.map((s) => ({ ...s, name: "", priority: null })),
             group: {
               ...detailItem.group,
               board: { ...detailItem.group.board },
