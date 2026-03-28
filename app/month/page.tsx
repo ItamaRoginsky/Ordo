@@ -195,9 +195,7 @@ function DayCell({
   isOver,
   onToggle,
   onOpen,
-  onAddTask,
-  projects,
-  inboxBoard,
+  onClickDate,
 }: {
   date:           Date;
   items:          MonthItem[];
@@ -205,12 +203,9 @@ function DayCell({
   isOver:         boolean;
   onToggle:       (item: MonthItem) => void;
   onOpen:         (item: MonthItem) => void;
-  onAddTask:      (task: NewTask, date: Date) => Promise<void>;
-  projects:       { id: string; name: string; color: string | null; icon: string | null }[];
-  inboxBoard:     { id: string; name: string; color: string | null } | null;
+  onClickDate:    (date: Date) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [showAdd,  setShowAdd]  = useState(false);
   const { setNodeRef } = useDroppable({
     id:   format(date, "yyyy-MM-dd"),
     data: { date },
@@ -225,7 +220,7 @@ function DayCell({
   return (
     <div
       ref={setNodeRef}
-      onClick={() => { if (!showAdd) setShowAdd(true); }}
+      onClick={() => onClickDate(date)}
       style={{
         minHeight:      90,
         border:         `1px solid ${today ? "rgba(91,156,246,0.4)" : "var(--border)"}`,
@@ -307,22 +302,6 @@ function DayCell({
         </button>
       )}
 
-      {/* Add task */}
-      {showAdd && (
-        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 2 }}>
-          <AddTaskModal
-            compact
-            defaultDate={date}
-            projects={projects}
-            inboxProject={inboxBoard}
-            onClose={() => setShowAdd(false)}
-            onSave={async (task) => {
-              await onAddTask(task, date);
-              setShowAdd(false);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }
@@ -335,6 +314,7 @@ export default function MonthPage() {
   const [detailItem,   setDetailItem]   = useState<MonthItem | null>(null);
   const [draggingItem, setDraggingItem] = useState<MonthItem | null>(null);
   const [overDate,     setOverDate]     = useState<string | null>(null);
+  const [addTaskDate,  setAddTaskDate]  = useState<Date | null>(null);
   const queryClient = useQueryClient();
 
   const year  = viewDate.getFullYear();
@@ -606,9 +586,7 @@ export default function MonthPage() {
                   isOver={overDate === key}
                   onToggle={handleToggle}
                   onOpen={setDetailItem}
-                  onAddTask={handleAddTask}
-                  projects={projects}
-                  inboxBoard={inboxBoard}
+                  onClickDate={setAddTaskDate}
                 />
               );
             })}
@@ -666,6 +644,20 @@ export default function MonthPage() {
             await fetch(`/api/items/${id}`, { method: "DELETE" });
             queryClient.invalidateQueries({ queryKey: ["month", year, month] });
             setDetailItem(null);
+          }}
+        />
+      )}
+
+      {/* Add task modal — rendered at page level so it never overflows a cell */}
+      {addTaskDate && (
+        <AddTaskModal
+          defaultDate={addTaskDate}
+          projects={projects}
+          inboxProject={inboxBoard}
+          onClose={() => setAddTaskDate(null)}
+          onSave={async (task) => {
+            await handleAddTask(task, addTaskDate);
+            setAddTaskDate(null);
           }}
         />
       )}
