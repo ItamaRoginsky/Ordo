@@ -122,6 +122,53 @@ body {
   opacity: 0.8;
 }
 
+/* ── Theme reveal animation ──────────────────────────────────────────────── */
+/*
+ * Technique from CodePen Z-/ZEzMpdj:
+ *   A zero-size div is placed at the toggle-button centre.
+ *   The @keyframes grows it to 500vmax × 500vmax while offsetting
+ *   margin-top / margin-left by −250vmax so the centre of the expanding
+ *   circle stays pinned to the button origin.
+ *   clip-path:circle() crops the rectangular div into a growing disc.
+ *
+ *   Animating width/height (layout) rather than clip-path radius alone
+ *   is what makes this work on all Chromium + Safari builds — the browser
+ *   cannot batch or drop a layout animation the way it can a clip-path
+ *   transition written in the same JS task.
+ */
+.theme-clip {
+  position:       fixed;
+  border-radius:  100%;
+  pointer-events: none;
+  z-index:        99999;
+  /* top + left set inline by JS to the button centre */
+}
+
+.theme-clip.animating {
+  animation: theme-circle-open 0.65s ease-in forwards;
+}
+
+@keyframes theme-circle-open {
+  from {
+    margin-top:  0;
+    margin-left: 0;
+    width:       0;
+    height:      0;
+    clip-path:   circle(0px at center);
+  }
+  to {
+    margin-top:  -250vmax;
+    margin-left: -250vmax;
+    width:       500vmax;
+    height:      500vmax;
+    clip-path:   circle(100% at center);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-clip.animating { animation-duration: 0.01ms; }
+}
+
 /* ── New-project modal — layout via CSS, no JS / useIsMobile needed ──────── */
 .np-overlay {
   position: fixed;

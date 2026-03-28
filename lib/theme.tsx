@@ -19,11 +19,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = useCallback((e: React.MouseEvent) => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
 
-    // Button centre in viewport coordinates — the circle expands from here
-    const btn  = e.currentTarget as HTMLElement
-    const rect = btn.getBoundingClientRect()
-    const x    = rect.left + rect.width  / 2
-    const y    = rect.top  + rect.height / 2
+    // Button centre — the growing circle is anchored here
+    const btn     = e.currentTarget as HTMLElement
+    const rect    = btn.getBoundingClientRect()
+    const originX = rect.left + rect.width  / 2
+    const originY = rect.top  + rect.height / 2
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.setAttribute('data-theme', next)
@@ -32,40 +32,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const newBg  = next === 'dark' ? '#111111' : '#F2F2F7'
-    const radius = Math.hypot(
-      Math.max(x, window.innerWidth  - x),
-      Math.max(y, window.innerHeight - y),
-    ) + 32
-
-    // Inject a named @keyframes rule with the exact origin baked in.
-    // A CSS *animation* fires as soon as the element is in the DOM and cannot
-    // be silently coalesced away by the browser the way a CSS *transition* can
-    // when both start and end values are written in the same JS task — which
-    // is what caused the animation to never play on Chrome/Windows.
-    const id      = `ordo-reveal-${Date.now()}`
-    const styleEl = document.createElement('style')
-    styleEl.textContent =
-      `@keyframes ${id}{` +
-        `from{clip-path:circle(0px at ${x}px ${y}px)}` +
-        `to{clip-path:circle(${radius}px at ${x}px ${y}px)}` +
-      `}`
-    document.head.appendChild(styleEl)
-
+    // Place a zero-size div exactly at the button centre.
+    // The CSS @keyframes (theme-circle-open in globals.css) grows it to
+    // 500vmax × 500vmax while applying margin: -250vmax so the circle centre
+    // stays pinned to the button throughout — the CodePen vmax trick.
     const clip = document.createElement('div')
+    clip.className = 'theme-clip'
     Object.assign(clip.style, {
-      position:      'fixed',
-      inset:         '0',
-      zIndex:        '99999',
-      background:    newBg,
-      pointerEvents: 'none',
-      animation:     `${id} 550ms ease-in forwards`,
+      top:        `${originY}px`,
+      left:       `${originX}px`,
+      background: next === 'dark' ? '#111111' : '#F2F2F7',
     })
     document.body.appendChild(clip)
 
-    // Commit the theme change once the disc covers the screen, then clean up.
-    // `settled` prevents the animationend listener and the safety-net timeout
-    // from both firing.
+    // Reading a layout property forces the browser to commit the element's
+    // initial (0 × 0) state before the animation class is applied.
+    void clip.getBoundingClientRect()
+
+    // Adding the class starts the CSS animation — no JS timing required.
+    clip.classList.add('animating')
+
+    // Once the disc covers the whole screen, swap the real theme (the clip is
+    // hiding everything so there is no visible flash), then remove it.
     let settled = false
     const commit = () => {
       if (settled) return
@@ -74,15 +62,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.setAttribute('data-theme', next)
       localStorage.setItem('ordo-theme', next)
       setTheme(next)
-      // Two rAFs so React's repaint is flushed before we pull the overlay away
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        clip.remove()
-        styleEl.remove()
-      }))
+      // Two rAFs let React flush its repaint before the overlay is pulled away
+      requestAnimationFrame(() => requestAnimationFrame(() => clip.remove()))
     }
 
     clip.addEventListener('animationend', commit)
-    setTimeout(commit, 700) // safety-net (tab hidden, slow device, etc.)
+    setTimeout(commit, 800) // safety-net: fires if animationend never arrives
   }, [theme])
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
