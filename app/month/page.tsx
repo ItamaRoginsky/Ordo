@@ -109,6 +109,7 @@ function TaskRow({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onClick={(e) => { e.stopPropagation(); onOpen(item); }}
       style={{
         display:        "flex",
         alignItems:     "center",
@@ -117,7 +118,7 @@ function TaskRow({
         borderRadius:   5,
         borderLeft:     `2px solid ${overdue ? "var(--sys-red)" : boardColor}`,
         opacity:        isDragging ? 0.3 : 1,
-        cursor:         "grab",
+        cursor:         "pointer",
         touchAction:    "none",
         background:     "transparent",
         minWidth:       0,
@@ -163,7 +164,6 @@ function TaskRow({
 
       {/* Name */}
       <span
-        onClick={() => onOpen(item)}
         style={{
           fontSize:       11,
           flex:           1,
@@ -225,6 +225,7 @@ function DayCell({
   return (
     <div
       ref={setNodeRef}
+      onClick={() => { if (!showAdd) setShowAdd(true); }}
       style={{
         minHeight:      90,
         border:         `1px solid ${today ? "rgba(91,156,246,0.4)" : "var(--border)"}`,
@@ -241,10 +242,12 @@ function DayCell({
         opacity:        inCurrentMonth ? 1 : 0.28,
         transition:     "background 0.12s",
         overflow:       "hidden",
+        cursor:         "pointer",
       }}
     >
       {/* Day number + done/total badge */}
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           display:        "flex",
           alignItems:     "center",
@@ -288,7 +291,7 @@ function DayCell({
       {/* +N more */}
       {!expanded && hidden > 0 && (
         <button
-          onClick={() => setExpanded(true)}
+          onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
           style={{
             fontSize:    10,
             color:       "var(--accent)",
@@ -305,8 +308,8 @@ function DayCell({
       )}
 
       {/* Add task */}
-      {showAdd ? (
-        <div style={{ marginTop: 2 }}>
+      {showAdd && (
+        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 2 }}>
           <AddTaskModal
             compact
             defaultDate={date}
@@ -319,29 +322,6 @@ function DayCell({
             }}
           />
         </div>
-      ) : (
-        <button
-          onClick={() => setShowAdd(true)}
-          style={{
-            fontSize:   10,
-            color:      "var(--text-4)",
-            textAlign:  "left",
-            padding:    "1px 4px",
-            marginTop:  "auto",
-            background: "transparent",
-            border:     "none",
-            cursor:     "pointer",
-            fontFamily: "inherit",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.color = "var(--text-2)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.color = "var(--text-4)";
-          }}
-        >
-          + Add
-        </button>
       )}
     </div>
   );
