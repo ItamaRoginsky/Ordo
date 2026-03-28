@@ -92,8 +92,10 @@ export function Sidebar({ boards, user }: SidebarProps) {
           <NavItem href="/today"     label="My Day"  active={pathname === "/today"}
             prefetchKey={["today", new Date().toISOString().split("T")[0]]}
             prefetchUrl={`/api/today?date=${new Date().toISOString().split("T")[0]}`} />
-          <NavItem href="/week"      label="My Week" active={pathname === "/week"}
+          <NavItem href="/week"      label="My Week"  active={pathname === "/week"}
             prefetchKey={["week"]} prefetchUrl="/api/week" />
+          <NavItem href="/month"     label="My Month" active={pathname === "/month"}
+            prefetchKey={["month"]} prefetchUrl="/api/month" />
         </nav>
 
         <div style={{ margin: "0 12px 8px", borderTop: "1px solid var(--border)" }} />
