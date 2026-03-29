@@ -1,249 +1,239 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  format,
-  startOfWeek,
-  addDays,
-  addWeeks,
-  subWeeks,
-  isToday,
-  isPast,
-  parseISO,
-  isSameDay,
-  startOfDay,
-} from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import { AddTaskModal, type NewTask } from "@/components/tasks/AddTaskModal";
-import { sortByPriority, PRIORITY_ORDER } from "@/components/tasks/PriorityDot";
-import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
-import { useIsMobile } from "@/hooks/useIsMobile";
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-  useDraggable,
-} from "@dnd-kit/core";
+import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday, parseISO, isSameDay } from "date-fns";
+import { Target, ChevronLeft, ChevronRight, Settings, Plus, Check, X, Trash2, Calendar } from "lucide-react";
+import * as Popover from "@radix-ui/react-popover";
 
-interface WeekItem {
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface GoalTask {
   id: string;
   name: string;
-  scheduledDate: string | null;
   completedAt: string | null;
   priority: string | null;
-  description: string | null;
-  deadline: string | null;
-  category: string | null;
+  scheduledDate: string | null;
   groupId: string;
-  group: { board: { id: string; name: string; color: string | null; icon: string | null } };
-  columnValues: { columnId: string; value: string }[];
-  subItems: { id: string; name: string; completedAt: string | null; priority: string | null }[];
 }
 
-const PRIORITY_COLORS: Record<string, string> = {
-  p1: "#ef4444",
-  p2: "#f97316",
-  p3: "#5b9cf6",
-  p4: "#6b7280",
-  // legacy support
-  critical: "#ef4444",
-  high: "#f97316",
-  medium: "#f59e0b",
-  low: "#6b7280",
-};
-
-function ItemCard({
-  item,
-  onToggle,
-  onOpenDetail,
-}: {
-  item: WeekItem;
-  onToggle: (item: WeekItem) => void;
-  onOpenDetail?: (item: WeekItem) => void;
-}) {
-  const done = !!item.completedAt;
-  const overdue =
-    !done &&
-    item.scheduledDate &&
-    isPast(parseISO(item.scheduledDate)) &&
-    !isToday(parseISO(item.scheduledDate));
-  const boardColor = item.group.board.color ?? "#6b7280";
-
-  return (
-    <div
-      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg group cursor-pointer transition-colors border-l-2 ${
-        overdue ? "border-red-500/60" : "border-transparent"
-      }`}
-      onClick={() => onOpenDetail ? onOpenDetail(item) : onToggle(item)}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-    >
-      <div
-        className={`mt-0.5 w-3 h-3 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-          done ? "border-[#22c55e] bg-[#22c55e]" : "group-hover:border-[#22c55e]"
-        }`}
-        style={!done ? { borderColor: "var(--border-strong)" } : undefined}
-      >
-        {done && <span className="text-white text-[7px] font-bold">✓</span>}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
-          {item.priority && item.priority !== "p4" && (
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ backgroundColor: PRIORITY_COLORS[item.priority] ?? "#6b7280" }}
-            />
-          )}
-          <p
-            className="text-xs leading-tight truncate"
-          style={{ color: done ? "var(--text-4)" : overdue ? "var(--sys-red)" : "var(--text-2)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.7 : 1 }}
-          >
-            {item.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-1 mt-0.5">
-          <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: boardColor }} />
-          <span className="text-[9px] truncate" style={{ color: "var(--text-4)" }}>{item.group.board.name}</span>
-        </div>
-      </div>
-    </div>
-  );
+interface WeeklyGoal {
+  id: string;
+  title: string;
+  isComplete: boolean;
+  position: number;
+  items: GoalTask[];
 }
 
-function DroppableDay({ date, isOver, children }: { date: Date; isOver: boolean; children: React.ReactNode }) {
-  const dateStr = format(date, "yyyy-MM-dd");
-  const { setNodeRef } = useDroppable({ id: dateStr, data: { date } });
+// ─── Small components ─────────────────────────────────────────────────────────
+
+function NavBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        flex: 1,
-        minHeight: 40,
-        borderRadius: 8,
-        background: isOver ? "var(--bg-hover)" : "transparent",
-        transition: "background 0.15s",
-      }}
+    <button
+      onClick={onClick}
+      style={{ padding: "6px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-3)", display: "flex", alignItems: "center" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
     >
       {children}
-    </div>
+    </button>
   );
 }
 
-function DraggableWeekTask({ item, children }: { item: WeekItem; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id });
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      style={{ opacity: isDragging ? 0.3 : 1, cursor: "grab", touchAction: "none" }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function DayColumn({
-  date,
-  items,
-  onToggle,
+function GoalCard({
+  goal,
+  onToggleGoal,
+  onRenameGoal,
+  onDeleteGoal,
   onAddTask,
-  onOpenDetail,
-  projects,
-  inboxBoard,
-  overDate,
+  onToggleTask,
+  onDeleteTask,
+  inboxGroupId,
 }: {
-  date: Date;
-  items: WeekItem[];
-  onToggle: (item: WeekItem) => void;
-  onAddTask: (task: NewTask, date: Date) => Promise<void>;
-  onOpenDetail: (item: WeekItem) => void;
-  projects: { id: string; name: string; color: string | null; icon: string | null }[];
-  inboxBoard: { id: string; name: string; color: string | null } | null;
-  overDate: string | null;
+  goal: WeeklyGoal;
+  onToggleGoal: (goal: WeeklyGoal) => void;
+  onRenameGoal: (id: string, title: string) => void;
+  onDeleteGoal: (id: string) => void;
+  onAddTask: (goalId: string, name: string, scheduledDate?: string) => void;
+  onToggleTask: (task: GoalTask) => void;
+  onDeleteTask: (id: string) => void;
+  inboxGroupId: string | null;
 }) {
-  const [showModal, setShowModal] = useState(false);
-  const today = isToday(date);
-  const doneCount = items.filter((i) => i.completedAt).length;
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft]   = useState(goal.title);
+  const [addingTask, setAddingTask]   = useState(false);
+  const [taskName, setTaskName]       = useState("");
+  const [taskDate, setTaskDate]       = useState("");
+  const titleRef = useRef<HTMLInputElement>(null);
+  const taskRef  = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (editingTitle) titleRef.current?.select(); }, [editingTitle]);
+  useEffect(() => { if (addingTask)   taskRef.current?.focus(); },  [addingTask]);
+
+  const allDone = goal.items.length > 0 && goal.items.every((t) => !!t.completedAt);
+  const isDone  = goal.isComplete || allDone;
+
+  function commitTitle() {
+    const trimmed = titleDraft.trim();
+    if (trimmed && trimmed !== goal.title) onRenameGoal(goal.id, trimmed);
+    else setTitleDraft(goal.title);
+    setEditingTitle(false);
+  }
+
+  function submitTask() {
+    const trimmed = taskName.trim();
+    if (!trimmed) { setAddingTask(false); setTaskName(""); setTaskDate(""); return; }
+    onAddTask(goal.id, trimmed, taskDate || undefined);
+    setTaskName("");
+    setTaskDate("");
+    setAddingTask(false);
+  }
+
+  const completedCount = goal.items.filter((t) => !!t.completedAt).length;
 
   return (
     <div
-      className="flex flex-col min-h-0 rounded-xl border transition-colors"
       style={{
-        background: today ? "rgba(91,156,246,0.03)" : "var(--bg-card)",
-        border: today ? "1px solid rgba(91,156,246,0.4)" : "1px solid var(--border)",
-        boxShadow: "var(--card-shadow)",
-        borderRadius: "var(--radius-card)",
+        background:    "var(--bg-card)",
+        border:        `1px solid ${isDone ? "rgba(34,197,94,0.3)" : "var(--border)"}`,
+        borderRadius:  12,
+        display:       "flex",
+        flexDirection: "column",
+        minWidth:      220,
+        maxWidth:      360,
+        flex:          "1 1 260px",
+        overflow:      "hidden",
+        transition:    "border-color 0.2s",
+        opacity:       isDone ? 0.75 : 1,
       }}
     >
-      {/* Header */}
-      <div
-        className="px-3 py-2.5"
-        style={{ borderBottom: today ? "1px solid rgba(91,156,246,0.2)" : "1px solid var(--border)" }}
-      >
-        <p className="text-[10px] font-semibold uppercase tracking-widest"
-          style={{ color: today ? "var(--chart-primary)" : "var(--text-3)" }}>
-          {format(date, "EEE")}
-        </p>
-        <div className="flex items-end justify-between">
-          <p className="text-lg font-semibold leading-tight"
-            style={{ color: today ? "var(--chart-primary)" : "var(--text-2)" }}>
-            {format(date, "d")}
-          </p>
-          {items.length > 0 && (
-            <span className="text-[9px] mb-0.5" style={{ color: "var(--text-4)" }}>
-              {doneCount}/{items.length}
+      {/* Goal header */}
+      <div style={{ padding: "12px 12px 8px", display: "flex", alignItems: "flex-start", gap: 8 }}>
+        {/* Completion toggle */}
+        <button
+          onClick={() => onToggleGoal(goal)}
+          style={{
+            width: 20, height: 20, borderRadius: "50%", flexShrink: 0, marginTop: 2,
+            border: `2px solid ${isDone ? "#22c55e" : "var(--border-strong)"}`,
+            background: isDone ? "#22c55e" : "transparent",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.15s",
+          }}
+        >
+          {isDone && <Check size={10} color="#fff" strokeWidth={3} />}
+        </button>
+
+        {/* Title */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {editingTitle ? (
+            <input
+              ref={titleRef}
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => { if (e.key === "Enter") commitTitle(); if (e.key === "Escape") { setTitleDraft(goal.title); setEditingTitle(false); } }}
+              style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: 14, fontWeight: 600, color: "var(--text-1)", fontFamily: "inherit" }}
+            />
+          ) : (
+            <span
+              onClick={() => setEditingTitle(true)}
+              style={{ fontSize: 14, fontWeight: 600, color: isDone ? "var(--text-3)" : "var(--text-1)", cursor: "text", textDecoration: isDone ? "line-through" : "none", display: "block", wordBreak: "break-word" }}
+            >
+              {goal.title}
             </span>
           )}
+          {goal.items.length > 0 && (
+            <span style={{ fontSize: 10, color: "var(--text-4)" }}>{completedCount}/{goal.items.length} tasks</span>
+          )}
         </div>
+
+        {/* Delete goal */}
+        <button
+          onClick={() => onDeleteGoal(goal.id)}
+          style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-4)", padding: 2, flexShrink: 0 }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
 
-      {/* Items */}
-      <div className="flex-1 p-1.5 overflow-y-auto">
-        <DroppableDay date={date} isOver={overDate === format(date, "yyyy-MM-dd")}>
-        {sortByPriority(items).map((item, idx, arr) => {
-          const prevPriority = idx > 0 ? (arr[idx - 1].priority ?? "p4") : null;
-          const thisPriority = item.priority ?? "p4";
-          const showDivider = idx > 0 && prevPriority !== thisPriority &&
-            PRIORITY_ORDER[prevPriority!] !== undefined;
-          return (
-            <div key={item.id}>
-              {showDivider && <div className="mx-1 my-1 h-[1px]" style={{ background: "var(--border)" }} />}
-              <DraggableWeekTask item={item}>
-                <ItemCard item={item} onToggle={onToggle} onOpenDetail={onOpenDetail} />
-              </DraggableWeekTask>
-            </div>
-          );
-        })}
-        </DroppableDay>
-
-        {showModal ? (
-          <div className="mt-1">
-            <AddTaskModal
-              defaultDate={date}
-              projects={projects}
-              inboxProject={inboxBoard}
-              compact={true}
-              onClose={() => setShowModal(false)}
-              onSave={async (task) => {
-                await onAddTask(task, date);
-                setShowModal(false);
+      {/* Task list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 12px" }}>
+        {goal.items.map((task) => (
+          <div
+            key={task.id}
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 0", borderBottom: "1px solid var(--border)" }}
+          >
+            {/* Task completion */}
+            <button
+              onClick={() => onToggleTask(task)}
+              style={{
+                width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
+                border: `1.5px solid ${task.completedAt ? "#22c55e" : "var(--border-strong)"}`,
+                background: task.completedAt ? "#22c55e" : "transparent",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}
+            >
+              {task.completedAt && <Check size={8} color="#fff" strokeWidth={3} />}
+            </button>
+
+            <span style={{ flex: 1, fontSize: 12, color: task.completedAt ? "var(--text-4)" : "var(--text-2)", textDecoration: task.completedAt ? "line-through" : "none", wordBreak: "break-word" }}>
+              {task.name}
+            </span>
+
+            {task.scheduledDate && (
+              <span style={{ fontSize: 9, color: isToday(parseISO(task.scheduledDate)) ? "var(--accent)" : "var(--text-4)", flexShrink: 0 }}>
+                {format(parseISO(task.scheduledDate), "MMM d")}
+              </span>
+            )}
+
+            <button
+              onClick={() => onDeleteTask(task.id)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "transparent", padding: 0, flexShrink: 0 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "transparent"; }}
+            >
+              <X size={11} />
+            </button>
+          </div>
+        ))}
+
+        {/* Add task row */}
+        {addingTask ? (
+          <div style={{ padding: "6px 0", display: "flex", flexDirection: "column", gap: 4 }}>
+            <input
+              ref={taskRef}
+              value={taskName}
+              onChange={(e) => setTaskName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") submitTask(); if (e.key === "Escape") { setAddingTask(false); setTaskName(""); setTaskDate(""); } }}
+              placeholder="Task name…"
+              style={{ width: "100%", background: "transparent", border: "none", borderBottom: "1px solid var(--border)", outline: "none", fontSize: 12, color: "var(--text-1)", fontFamily: "inherit", paddingBottom: 2 }}
             />
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Calendar size={11} style={{ color: "var(--text-4)" }} />
+              <input
+                type="date"
+                value={taskDate}
+                onChange={(e) => setTaskDate(e.target.value)}
+                style={{ fontSize: 11, background: "transparent", border: "none", outline: "none", color: "var(--text-3)", fontFamily: "inherit", cursor: "pointer" }}
+              />
+              <button onClick={submitTask} disabled={!taskName.trim()} style={{ marginLeft: "auto", padding: "2px 8px", fontSize: 11, background: "var(--accent)", border: "none", borderRadius: 6, color: "#fff", cursor: "pointer", fontFamily: "inherit", opacity: taskName.trim() ? 1 : 0.4 }}>
+                Add
+              </button>
+              <button onClick={() => { setAddingTask(false); setTaskName(""); setTaskDate(""); }} style={{ padding: "2px 6px", fontSize: 11, background: "transparent", border: "none", color: "var(--text-4)", cursor: "pointer", fontFamily: "inherit" }}>
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
           <button
-            onClick={() => setShowModal(true)}
-            className="w-full text-left px-2 py-1 text-[10px] transition-colors rounded-lg"
-          style={{ color: "var(--text-4)" }}
+            onClick={() => setAddingTask(true)}
+            style={{ width: "100%", textAlign: "left", padding: "6px 0", fontSize: 11, color: "var(--text-4)", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
           >
-            + Add task
+            <Plus size={11} /> Add task
           </button>
         )}
       </div>
@@ -251,254 +241,347 @@ function DayColumn({
   );
 }
 
-export default function WeekPage() {
-  const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
-  const [weekStart, setWeekStart] = useState(() =>
-    startOfWeek(new Date(), { weekStartsOn: 1 })
+function EmptySlot({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div
+      onClick={onAdd}
+      style={{
+        background:    "transparent",
+        border:        "1.5px dashed var(--border)",
+        borderRadius:  12,
+        minWidth:      220,
+        maxWidth:      360,
+        flex:          "1 1 260px",
+        minHeight:     120,
+        display:       "flex",
+        alignItems:    "center",
+        justifyContent:"center",
+        cursor:        "pointer",
+        color:         "var(--text-4)",
+        fontSize:      12,
+        gap:           6,
+        transition:    "all 0.15s",
+      }}
+      onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "var(--accent)"; el.style.color = "var(--accent)"; }}
+      onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "var(--border)"; el.style.color = "var(--text-4)"; }}
+    >
+      <Plus size={14} /> Add a goal
+    </div>
   );
-  const [detailItem, setDetailItem] = useState<WeekItem | null>(null);
-  const [overDate, setOverDate] = useState<string | null>(null);
-  const [draggingItem, setDraggingItem] = useState<WeekItem | null>(null);
+}
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+// ─── Main page ────────────────────────────────────────────────────────────────
 
-  // Auto-scroll to today's column on mobile
-  useEffect(() => {
-    if (!isMobile) return;
-    const todayEl = document.getElementById('week-today');
-    todayEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [isMobile, weekStart]);
+export default function WeekPage() {
+  const today = new Date();
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date(today);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [targetDraft, setTargetDraft]   = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    setDraggingItem(null);
-    setOverDate(null);
-    if (!over) return;
+  const weekStr = format(weekStart, "yyyy-MM-dd");
+  const weekEnd = addDays(weekStart, 6);
+  const isCurrentWeek = isSameDay(
+    weekStart,
+    (() => {
+      const d = new Date(today);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })()
+  );
 
-    const newDate = over.data.current?.date as Date | undefined;
-    if (!newDate) return;
+  const { data, isLoading } = useQuery<{
+    goals: WeeklyGoal[];
+    weeklyGoalsTarget: number;
+    inboxGroupId: string | null;
+  }>({
+    queryKey: ["weekly", weekStr],
+    queryFn:  () => fetch(`/api/weekly?weekStart=${weekStr}`).then((r) => r.json()),
+  });
 
-    const itemId = active.id as string;
-    const item = items.find((i) => i.id === itemId);
-    if (!item) return;
+  const goals           = data?.goals           ?? [];
+  const target          = data?.weeklyGoalsTarget ?? 5;
+  const inboxGroupId    = data?.inboxGroupId     ?? null;
 
-    // Skip if same day
-    if (item.scheduledDate && isSameDay(parseISO(item.scheduledDate), newDate)) return;
+  const completedGoals = goals.filter((g) => g.isComplete || (g.items.length > 0 && g.items.every((t) => !!t.completedAt))).length;
+  const emptySlots     = Math.max(0, target - goals.length);
 
-    const newScheduled = startOfDay(newDate).toISOString();
-    const isTodayDate = isToday(newDate);
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["weekly", weekStr] });
+  }
 
-    // Optimistic update
-    const previous = queryClient.getQueryData(["week", startStr]);
-    queryClient.setQueryData(["week", startStr], (old: any) => {
+  // ── Goal mutations ─────────────────────────────────────────────────────────
+
+  async function addGoal() {
+    await fetch("/api/weekly", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weekStart: weekStr, title: "New goal" }),
+    });
+    invalidate();
+  }
+
+  async function toggleGoal(goal: WeeklyGoal) {
+    const isComplete = !(goal.isComplete || (goal.items.length > 0 && goal.items.every((t) => !!t.completedAt)));
+    queryClient.setQueryData(["weekly", weekStr], (old: any) =>
+      old && ({ ...old, goals: old.goals.map((g: WeeklyGoal) => g.id === goal.id ? { ...g, isComplete } : g) })
+    );
+    await fetch(`/api/weekly/${goal.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isComplete }),
+    });
+    invalidate();
+  }
+
+  async function renameGoal(id: string, title: string) {
+    queryClient.setQueryData(["weekly", weekStr], (old: any) =>
+      old && ({ ...old, goals: old.goals.map((g: WeeklyGoal) => g.id === id ? { ...g, title } : g) })
+    );
+    await fetch(`/api/weekly/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  async function deleteGoal(id: string) {
+    queryClient.setQueryData(["weekly", weekStr], (old: any) =>
+      old && ({ ...old, goals: old.goals.filter((g: WeeklyGoal) => g.id !== id) })
+    );
+    await fetch(`/api/weekly/${id}`, { method: "DELETE" });
+    invalidate();
+  }
+
+  // ── Task mutations ─────────────────────────────────────────────────────────
+
+  async function addTask(goalId: string, name: string, scheduledDateStr?: string) {
+    if (!inboxGroupId) return;
+    const body: Record<string, unknown> = { groupId: inboxGroupId, name, weeklyGoalId: goalId };
+    if (scheduledDateStr) {
+      const d = new Date(scheduledDateStr);
+      d.setHours(12, 0, 0, 0);
+      body.scheduledDate = d.toISOString();
+      body.isToday = isToday(d);
+    }
+    await fetch("/api/items", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    invalidate();
+  }
+
+  async function toggleTask(task: GoalTask) {
+    const completedAt = task.completedAt ? null : new Date().toISOString();
+    queryClient.setQueryData(["weekly", weekStr], (old: any) => {
       if (!old) return old;
       return {
         ...old,
-        items: old.items.map((i: WeekItem) =>
-          i.id === itemId ? { ...i, scheduledDate: newScheduled, isToday: isTodayDate } : i
-        ),
+        goals: old.goals.map((g: WeeklyGoal) => ({
+          ...g,
+          items: g.items.map((t: GoalTask) => t.id === task.id ? { ...t, completedAt } : t),
+        })),
       };
     });
-
-    const res = await fetch(`/api/items/${itemId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scheduledDate: newScheduled, isToday: isTodayDate }),
+    await fetch(`/api/items/${task.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completedAt }),
     });
-    if (!res.ok) {
-      queryClient.setQueryData(["week", startStr], previous);
-    } else {
-      queryClient.invalidateQueries({ queryKey: ["week", startStr] });
-    }
+    invalidate();
   }
 
-  const startStr = format(weekStart, "yyyy-MM-dd");
+  async function deleteTask(id: string) {
+    queryClient.setQueryData(["weekly", weekStr], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        goals: old.goals.map((g: WeeklyGoal) => ({
+          ...g,
+          items: g.items.filter((t: GoalTask) => t.id !== id),
+        })),
+      };
+    });
+    await fetch(`/api/items/${id}`, { method: "DELETE" });
+    invalidate();
+  }
 
-  const { data, isLoading } = useQuery<{
-    items: WeekItem[];
-    inboxGroupId: string | null;
-    inboxBoard: { id: string; name: string; color: string | null } | null;
-    projects: { id: string; name: string; color: string | null; icon: string | null }[];
-  }>({
-    queryKey: ["week", startStr],
-    queryFn: () => fetch(`/api/week?start=${startStr}`).then((r) => r.json()),
-  });
-
-  const items = data?.items ?? [];
-  const inboxGroupId = data?.inboxGroupId ?? null;
-  const inboxBoard = data?.inboxBoard ?? null;
-  const projects = data?.projects ?? [];
-
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-  function itemsForDay(day: Date) {
-    return items.filter(
-      (item) => item.scheduledDate && isSameDay(parseISO(item.scheduledDate), day)
+  async function saveTarget(val: number) {
+    await fetch("/api/me", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weeklyGoalsTarget: val }),
+    });
+    queryClient.setQueryData(["weekly", weekStr], (old: any) =>
+      old && ({ ...old, weeklyGoalsTarget: val })
     );
   }
 
-  async function toggleItem(item: WeekItem) {
-    const completedAt = item.completedAt ? null : new Date().toISOString();
-    await fetch(`/api/items/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completedAt }),
-    });
-    queryClient.invalidateQueries({ queryKey: ["week", startStr] });
-    queryClient.invalidateQueries({ queryKey: ["stats"] });
-  }
-
-  async function addTask(task: NewTask, date: Date) {
-    if (!inboxGroupId) return;
-    const scheduledDate = new Date(date);
-    scheduledDate.setHours(12, 0, 0, 0);
-    await fetch("/api/items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        groupId: inboxGroupId,
-        name: task.name,
-        description: task.description,
-        scheduledDate: scheduledDate.toISOString(),
-        priority: task.priority !== "p4" ? task.priority : null,
-        category: task.category,
-        isToday: isToday(date),
-      }),
-    });
-    queryClient.invalidateQueries({ queryKey: ["week", startStr] });
-  }
-
-  const weekEnd = addDays(weekStart, 6);
-  const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full" style={{ padding: "clamp(12px, 4vw, 24px)" }}>
+    <div className="flex flex-col h-full" style={{ padding: "clamp(12px, 3vw, 24px)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
         <div className="flex items-center gap-3">
-          <Calendar size={20} style={{ color: "var(--chart-primary)" }} />
+          <Target size={20} style={{ color: "var(--accent)" }} />
           <div>
-            <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>My Week</h1>
+            <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>
+              Weekly Goals
+            </h1>
             <p className="text-sm" style={{ color: "var(--text-3)" }}>
               {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-1">
+          {/* Settings */}
+          <Popover.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <Popover.Trigger asChild>
+              <button
+                style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-3)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                title="Settings"
+              >
+                <Settings size={16} />
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                sideOffset={8}
+                align="end"
+                style={{ zIndex: 300, background: "var(--bg-card)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: 16, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}
+              >
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-1)", marginBottom: 12 }}>Weekly Settings</p>
+                <label style={{ fontSize: 12, color: "var(--text-2)", display: "block", marginBottom: 8 }}>
+                  Goals per week target
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    type="range" min={1} max={10}
+                    value={targetDraft ?? target}
+                    onChange={(e) => setTargetDraft(Number(e.target.value))}
+                    onMouseUp={() => { if (targetDraft !== null && targetDraft !== target) { saveTarget(targetDraft); } }}
+                    onTouchEnd={() => { if (targetDraft !== null && targetDraft !== target) { saveTarget(targetDraft); } }}
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--accent)", minWidth: 20, textAlign: "center" }}>
+                    {targetDraft ?? target}
+                  </span>
+                </div>
+                <p style={{ fontSize: 10, color: "var(--text-4)", marginTop: 6 }}>
+                  {targetDraft ?? target} goal{(targetDraft ?? target) !== 1 ? "s" : ""} per week
+                </p>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+
+          {/* Navigation */}
           {!isCurrentWeek && (
             <button
-              onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-              className="text-xs px-2.5 py-1 rounded-lg transition-colors mr-1"
-              style={{ color: "var(--text-3)" }}
+              onClick={() => {
+                const d = new Date(today);
+                const day = d.getDay();
+                const diff = day === 0 ? -6 : 1 - day;
+                d.setDate(d.getDate() + diff);
+                d.setHours(0, 0, 0, 0);
+                setWeekStart(d);
+              }}
+              style={{ fontSize: 11, padding: "4px 10px", borderRadius: 7, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-3)", fontFamily: "inherit" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
-              Today
+              This week
             </button>
           )}
-          <button
-            onClick={() => setWeekStart(subWeeks(weekStart, 1))}
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ color: "var(--text-3)" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => setWeekStart(addWeeks(weekStart, 1))}
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ color: "var(--text-3)" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-          >
-            <ChevronRight size={16} />
-          </button>
+          <NavBtn onClick={() => setWeekStart(subWeeks(weekStart, 1))}><ChevronLeft size={16} /></NavBtn>
+          <NavBtn onClick={() => setWeekStart(addWeeks(weekStart, 1))}><ChevronRight size={16} /></NavBtn>
         </div>
       </div>
 
+      {/* Progress bar */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+          <span style={{ fontSize: 11, color: "var(--text-3)" }}>
+            {completedGoals} of {target} goal{target !== 1 ? "s" : ""} completed
+          </span>
+          {completedGoals === target && target > 0 && (
+            <span style={{ fontSize: 11, color: "#22c55e", fontWeight: 600 }}>🎉 All done!</span>
+          )}
+        </div>
+        <div style={{ height: 6, borderRadius: 3, background: "var(--bg-hover)", overflow: "hidden" }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${target > 0 ? Math.min(100, (completedGoals / target) * 100) : 0}%`,
+              background: completedGoals === target && target > 0 ? "#22c55e" : "var(--accent)",
+              borderRadius: 3,
+              transition: "width 0.4s ease",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Goal cards */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center text-sm" style={{ color: "var(--text-4)" }}>
           Loading…
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          onDragStart={(e: DragStartEvent) => setDraggingItem(items.find((i) => i.id === e.active.id) ?? null)}
-          onDragOver={(e) => setOverDate(e.over?.id as string ?? null)}
-          onDragEnd={handleDragEnd}
-          onDragCancel={() => { setDraggingItem(null); setOverDate(null); }}
+        <div
+          style={{
+            display:    "flex",
+            flexWrap:   "wrap",
+            gap:        12,
+            flex:       1,
+            alignContent: "flex-start",
+            overflowY:  "auto",
+          }}
         >
-          <div
-            className={isMobile ? '' : 'flex-1 grid grid-cols-7 gap-3 min-h-0'}
-            style={isMobile ? {
-              display: 'flex',
-              gap: 10,
-              overflowX: 'auto',
-              padding: '0 0 16px',
-              scrollSnapType: 'x mandatory',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              flex: 1,
-              minHeight: 0,
-            } : undefined}
-          >
-            {days.map((day) => (
-              <div
-                key={day.toISOString()}
-                id={isToday(day) ? 'week-today' : undefined}
-                style={isMobile ? {
-                  flexShrink: 0,
-                  width: 'calc(85vw)',
-                  maxWidth: 280,
-                  scrollSnapAlign: 'start',
-                } : undefined}
-              >
-                <DayColumn
-                  date={day}
-                  items={itemsForDay(day)}
-                  onToggle={toggleItem}
-                  onAddTask={addTask}
-                  onOpenDetail={setDetailItem}
-                  projects={projects}
-                  inboxBoard={inboxBoard}
-                  overDate={overDate}
-                />
-              </div>
-            ))}
-          </div>
-          <DragOverlay>
-            {draggingItem && (
-              <div style={{ opacity: 0.9, pointerEvents: "none" }}>
-                <ItemCard item={draggingItem} onToggle={() => {}} />
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
-      )}
+          {goals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onToggleGoal={toggleGoal}
+              onRenameGoal={renameGoal}
+              onDeleteGoal={deleteGoal}
+              onAddTask={addTask}
+              onToggleTask={toggleTask}
+              onDeleteTask={deleteTask}
+              inboxGroupId={inboxGroupId}
+            />
+          ))}
 
-      {detailItem && (
-        <TaskDetailModal
-          item={{
-            ...detailItem,
-            group: { ...detailItem.group, board: { ...detailItem.group.board } },
-          }}
-          onClose={() => setDetailItem(null)}
-          onUpdate={async (id, patch) => {
-            await fetch(`/api/items/${id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(patch),
-            });
-            queryClient.invalidateQueries({ queryKey: ["week", startStr] });
-          }}
-          onDelete={async (id) => {
-            await fetch(`/api/items/${id}`, { method: "DELETE" });
-            queryClient.invalidateQueries({ queryKey: ["week", startStr] });
-            setDetailItem(null);
-          }}
-        />
+          {/* Empty slots up to target */}
+          {Array.from({ length: emptySlots }).map((_, i) => (
+            <EmptySlot key={`empty-${i}`} onAdd={addGoal} />
+          ))}
+
+          {/* Extra add button when at or above target */}
+          {goals.length >= target && (
+            <button
+              onClick={addGoal}
+              style={{
+                minWidth: 120, flex: "0 0 auto",
+                padding: "10px 16px", borderRadius: 10,
+                background: "transparent", border: "1.5px dashed var(--border)",
+                color: "var(--text-4)", fontSize: 12, cursor: "pointer",
+                fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
+              }}
+              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "var(--accent)"; el.style.color = "var(--accent)"; }}
+              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = "var(--border)"; el.style.color = "var(--text-4)"; }}
+            >
+              <Plus size={13} /> Add goal
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Sun, CalendarDays, FolderOpen, Menu, X, Shield } from "lucide-react";
+import { Home, Sun, CalendarDays, FolderOpen, Menu, X, Shield, Target } from "lucide-react";
 import { Moon } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -339,7 +339,7 @@ export function AppShellClient({ children, boards, user }: AppShellClientProps) 
             { icon: Home,         label: "Home",     href: "/dashboard" },
             { icon: Sun,          label: "My Day",   href: "/today" },
             { icon: CalendarDays, label: "Month",    href: "/month" },
-            { icon: FolderOpen,   label: "Projects", href: "/boards" },
+            { icon: Target,       label: "Goals",    href: "/week" },
           ].map((tab) => {
             const isActive =
               tab.href === "/dashboard"

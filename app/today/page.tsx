@@ -472,6 +472,7 @@ export default function TodayPage() {
 
   const { data, isLoading } = useQuery<{
     items: TodayItem[];
+    overdueItems: TodayItem[];
     inboxGroupId: string | null;
     inboxBoard: { id: string; name: string; color: string | null } | null;
     projects: { id: string; name: string; color: string | null; icon: string | null }[];
@@ -481,12 +482,14 @@ export default function TodayPage() {
   });
 
   const items = data?.items ?? [];
+  const overdueItems = data?.overdueItems ?? [];
   const inboxGroupId = data?.inboxGroupId ?? null;
   const inboxBoard = data?.inboxBoard ?? null;
   const projects = data?.projects ?? [];
 
   const activeItems = items.filter((i) => !i.completedAt);
   const completedItems = items.filter((i) => !!i.completedAt);
+  const [overdueOpen, setOverdueOpen] = useState(true);
 
   const grouped = PRIORITY_GROUPS.map((group) => ({
     ...group,
@@ -642,6 +645,14 @@ export default function TodayPage() {
             · {activeItems.length} task{activeItems.length !== 1 ? "s" : ""}
           </span>
         )}
+        {overdueItems.length > 0 && (
+          <span
+            className="text-xs ml-1 px-1.5 py-0.5 rounded-full font-semibold"
+            style={{ color: "#fff", background: "#ef4444" }}
+          >
+            {overdueItems.length} overdue
+          </span>
+        )}
       </div>
 
       {isLoading ? (
@@ -653,6 +664,42 @@ export default function TodayPage() {
               <p className="text-sm" style={{ color: "var(--text-4)" }}>
                 Nothing planned for {isCurrentDay ? "today" : format(viewDate, "MMM d")}
               </p>
+            </div>
+          )}
+
+          {/* Overdue section */}
+          {overdueItems.length > 0 && (
+            <div className="mb-4">
+              <button
+                onClick={() => setOverdueOpen(!overdueOpen)}
+                className="flex items-center gap-2 mb-2 px-1 text-[10px] w-full"
+                style={{ color: "#ef4444" }}
+              >
+                <ChevronDown
+                  size={10}
+                  className={`transition-transform ${overdueOpen ? "" : "-rotate-90"}`}
+                />
+                <span className="uppercase tracking-widest font-semibold">
+                  Overdue ({overdueItems.length})
+                </span>
+                <div className="flex-1 h-px mx-2" style={{ background: "rgba(239,68,68,0.3)" }} />
+              </button>
+              {overdueOpen && (
+                <div className="rounded-xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  {overdueItems.map((item) => (
+                    <TaskRow
+                      key={item.id}
+                      item={item}
+                      viewDate={viewDate}
+                      onToggleComplete={toggleComplete}
+                      onDelete={deleteItem}
+                      onUpdate={updateItem}
+                      onAddSubTask={addSubTask}
+                      onOpenDetail={setDetailItem}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

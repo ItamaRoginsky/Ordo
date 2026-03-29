@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
     targetDate.getDate() === now.getDate();
 
   // Run all queries in parallel
-  const [items, inboxBoard, projects] = await Promise.all([
+  const overdueEnd = new Date(start);
+  overdueEnd.setMilliseconds(overdueEnd.getMilliseconds() - 1); // just before today
+
+  const [items, overdueItems, inboxBoard, projects] = await Promise.all([
     db.item.findMany({
       where: {
         parentId: null,
@@ -44,6 +47,27 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { position: "asc" },
     }),
+    // Overdue: past-scheduled tasks that are not done and not pinned to today
+    db.item.findMany({
+      where: {
+        parentId: null,
+        group: { board: { ownerId: me.id } },
+        scheduledDate: { lt: start },
+        completedAt: null,
+        isToday: false,
+      },
+      include: {
+        columnValues: true,
+        subItems: {
+          orderBy: { position: "asc" },
+          include: { columnValues: true },
+        },
+        group: {
+          include: { board: { select: { id: true, name: true, color: true, icon: true } } },
+        },
+      },
+      orderBy: { scheduledDate: "asc" },
+    }),
     db.board.findFirst({
       where: { ownerId: me.id, isSystem: true, type: "inbox" },
       select: {
@@ -64,6 +88,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     items,
+    overdueItems,
     inboxGroupId,
     inboxBoard: inboxBoard ? { id: inboxBoard.id, name: inboxBoard.name, color: inboxBoard.color } : null,
     projects,

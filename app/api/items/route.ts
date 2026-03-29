@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const me = await getOrdoUser();
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { groupId, name, priority, category, parentId, isToday, scheduledDate, description } = await req.json();
+  const { groupId, name, priority, category, parentId, isToday, scheduledDate, description, weeklyGoalId } = await req.json();
 
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
       ...(parentId !== undefined && { parentId }),
       ...(isToday !== undefined && { isToday }),
       ...(scheduledDate !== undefined && { scheduledDate: new Date(scheduledDate) }),
-      ...(description !== undefined && { description }),
+      ...(description    !== undefined && { description }),
+      ...(weeklyGoalId   !== undefined && { weeklyGoalId }),
     },
     include: { columnValues: true, subItems: true },
   });

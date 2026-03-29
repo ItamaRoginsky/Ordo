@@ -18,8 +18,17 @@ import {
   parseISO,
   isSameDay,
   startOfDay,
+  startOfWeek,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+
+type ViewMode = "3" | "7" | "14" | "month";
+const VIEW_OPTIONS: { key: ViewMode; label: string }[] = [
+  { key: "3",     label: "3d"    },
+  { key: "7",     label: "7d"    },
+  { key: "14",    label: "14d"   },
+  { key: "month", label: "Month" },
+];
 import {
   DndContext,
   DragEndEvent,
@@ -310,7 +319,9 @@ function DayCell({
 
 export default function MonthPage() {
   const today = new Date();
+  const [viewMode,     setViewMode]     = useState<ViewMode>("month");
   const [viewDate,     setViewDate]     = useState(() => startOfMonth(today));
+  const [stripStart,   setStripStart]   = useState(() => startOfDay(today));
   const [detailItem,   setDetailItem]   = useState<MonthItem | null>(null);
   const [draggingItem, setDraggingItem] = useState<MonthItem | null>(null);
   const [overDate,     setOverDate]     = useState<string | null>(null);
@@ -320,26 +331,76 @@ export default function MonthPage() {
   const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
+  const stripDays = viewMode !== "month" ? parseInt(viewMode) : 0;
+  const stripStartStr = format(stripStart, "yyyy-MM-dd");
+
   const { data, isLoading } = useQuery<{
     items:         MonthItem[];
     inboxGroupId:  string | null;
     inboxBoard:    { id: string; name: string; color: string | null } | null;
     projects:      { id: string; name: string; color: string | null; icon: string | null }[];
   }>({
-    queryKey: ["month", year, month],
-    queryFn:  () =>
-      fetch(`/api/month?year=${year}&month=${month}`).then((r) => r.json()),
+    queryKey:  ["month", year, month],
+    queryFn:   () => fetch(`/api/month?year=${year}&month=${month}`).then((r) => r.json()),
+    enabled:   viewMode === "month",
   });
 
-  const items        = data?.items        ?? [];
-  const inboxGroupId = data?.inboxGroupId ?? null;
-  const inboxBoard   = data?.inboxBoard   ?? null;
-  const projects     = data?.projects     ?? [];
+  const { data: stripData, isLoading: stripLoading } = useQuery<{
+    items:         MonthItem[];
+    inboxGroupId:  string | null;
+    inboxBoard:    { id: string; name: string; color: string | null } | null;
+    projects:      { id: string; name: string; color: string | null; icon: string | null }[];
+  }>({
+    queryKey:  ["range", stripStartStr, stripDays],
+    queryFn:   () => fetch(`/api/month?start=${stripStartStr}&days=${stripDays}`).then((r) => r.json()),
+    enabled:   viewMode !== "month",
+  });
+
+  const activeData   = viewMode === "month" ? data : stripData;
+  const isLoading2   = viewMode === "month" ? isLoading : stripLoading;
+  const items        = activeData?.items        ?? [];
+  const inboxGroupId = activeData?.inboxGroupId ?? null;
+  const inboxBoard   = activeData?.inboxBoard   ?? null;
+  const projects     = activeData?.projects     ?? [];
+
+  // For strip views, build the list of days to show
+  const stripGrid = useMemo(() => {
+    if (viewMode === "month") return [];
+    return Array.from({ length: stripDays }, (_, i) => addDays(stripStart, i));
+  }, [viewMode, stripStart, stripDays]);
 
   const grid         = useMemo(() => buildGrid(viewDate), [viewDate]);
   const weeksInGrid  = grid.length / 7;
   const rowHeight    = Math.max(90, Math.floor(600 / weeksInGrid));
   const isNowMonth   = isSameMonth(viewDate, today);
+
+  function invalidateActive() {
+    if (viewMode === "month") {
+      queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["range", stripStartStr, stripDays] });
+    }
+  }
+
+  function navigate(direction: 1 | -1) {
+    if (viewMode === "month") {
+      setViewDate(direction === 1 ? addMonths(viewDate, 1) : subMonths(viewDate, 1));
+    } else {
+      setStripStart(addDays(stripStart, direction * stripDays));
+    }
+  }
+
+  function jumpToToday() {
+    if (viewMode === "month") {
+      setViewDate(startOfMonth(today));
+    } else {
+      setStripStart(startOfDay(today));
+    }
+  }
+
+  const isAtToday = viewMode === "month"
+    ? isSameMonth(viewDate, today)
+    : isSameDay(stripStart, today) || (stripDays > 1 && stripStart <= today && today <= addDays(stripStart, stripDays - 1));
 
   // Group items by "yyyy-MM-dd"
   const byDate = useMemo(() => {
@@ -359,22 +420,20 @@ export default function MonthPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  const activeQueryKey = viewMode === "month"
+    ? ["month", year, month]
+    : ["range", stripStartStr, stripDays];
+
   async function handleToggle(item: MonthItem) {
     const completedAt = item.completedAt ? null : new Date().toISOString();
-    queryClient.setQueryData(["month", year, month], (old: any) =>
-      old && ({
-        ...old,
-        items: old.items.map((i: MonthItem) =>
-          i.id === item.id ? { ...i, completedAt } : i
-        ),
-      })
+    queryClient.setQueryData(activeQueryKey, (old: any) =>
+      old && ({ ...old, items: old.items.map((i: MonthItem) => i.id === item.id ? { ...i, completedAt } : i) })
     );
     await fetch(`/api/items/${item.id}`, {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ completedAt }),
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completedAt }),
     });
-    queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+    invalidateActive();
     queryClient.invalidateQueries({ queryKey: ["stats"] });
   }
 
@@ -383,19 +442,15 @@ export default function MonthPage() {
     const scheduledDate = new Date(date);
     scheduledDate.setHours(12, 0, 0, 0);
     await fetch("/api/items", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        groupId:       inboxGroupId,
-        name:          task.name,
-        description:   task.description,
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        groupId: inboxGroupId, name: task.name, description: task.description,
         scheduledDate: scheduledDate.toISOString(),
-        priority:      task.priority !== "p4" ? task.priority : null,
-        category:      task.category,
-        isToday:       isToday(date),
+        priority: task.priority !== "p4" ? task.priority : null,
+        category: task.category, isToday: isToday(date),
       }),
     });
-    queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+    invalidateActive();
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -413,30 +468,19 @@ export default function MonthPage() {
     if (item.scheduledDate && isSameDay(parseISO(item.scheduledDate), newDate)) return;
 
     const newScheduled = startOfDay(newDate).toISOString();
-
-    // Optimistic update
-    const previous = queryClient.getQueryData(["month", year, month]);
-    queryClient.setQueryData(["month", year, month], (old: any) =>
-      old && ({
-        ...old,
-        items: old.items.map((i: MonthItem) =>
-          i.id === item.id ? { ...i, scheduledDate: newScheduled } : i
-        ),
-      })
+    const previous = queryClient.getQueryData(activeQueryKey);
+    queryClient.setQueryData(activeQueryKey, (old: any) =>
+      old && ({ ...old, items: old.items.map((i: MonthItem) => i.id === item.id ? { ...i, scheduledDate: newScheduled } : i) })
     );
 
     const res = await fetch(`/api/items/${item.id}`, {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        scheduledDate: newScheduled,
-        isToday:       isToday(newDate),
-      }),
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledDate: newScheduled, isToday: isToday(newDate) }),
     });
     if (!res.ok) {
-      queryClient.setQueryData(["month", year, month], previous);
+      queryClient.setQueryData(activeQueryKey, previous);
     } else {
-      queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+      invalidateActive();
     }
   }
 
@@ -448,80 +492,84 @@ export default function MonthPage() {
       style={{ padding: "clamp(12px, 3vw, 24px)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="flex items-center gap-3">
           <CalendarDays size={20} style={{ color: "var(--accent)" }} />
           <div>
-            <h1
-              className="text-xl font-semibold tracking-tight"
-              style={{ color: "var(--text-1)" }}
-            >
+            <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>
               My Month
             </h1>
             <p className="text-sm" style={{ color: "var(--text-3)" }}>
-              {format(viewDate, "MMMM yyyy")}
+              {viewMode === "month"
+                ? format(viewDate, "MMMM yyyy")
+                : `${format(stripStart, "MMM d")} – ${format(addDays(stripStart, stripDays - 1), "MMM d, yyyy")}`}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {!isNowMonth && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View toggle */}
+          <div
+            className="flex rounded-lg overflow-hidden"
+            style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}
+          >
+            {VIEW_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setViewMode(opt.key)}
+                style={{
+                  padding:    "4px 10px",
+                  fontSize:   11,
+                  fontWeight: viewMode === opt.key ? 600 : 400,
+                  color:      viewMode === opt.key ? "var(--text-1)" : "var(--text-3)",
+                  background: viewMode === opt.key ? "var(--bg-hover)" : "transparent",
+                  border:     "none",
+                  cursor:     "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.1s",
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center gap-1">
+            {!isAtToday && (
+              <button
+                onClick={jumpToToday}
+                className="text-xs px-2.5 py-1 rounded-lg"
+                style={{ color: "var(--text-3)" }}
+                onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = "var(--text-1)"; el.style.background = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = "var(--text-3)"; el.style.background = "transparent"; }}
+              >
+                Today
+              </button>
+            )}
             <button
-              onClick={() => setViewDate(startOfMonth(today))}
-              className="text-xs px-2.5 py-1 rounded-lg mr-1"
+              onClick={() => navigate(-1)}
+              className="p-1.5 rounded-lg"
               style={{ color: "var(--text-3)" }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.color      = "var(--text-1)";
-                el.style.background = "var(--bg-hover)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.color      = "var(--text-3)";
-                el.style.background = "transparent";
-              }}
+              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = "var(--text-1)"; el.style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = "var(--text-3)"; el.style.background = "transparent"; }}
             >
-              Today
+              <ChevronLeft size={16} />
             </button>
-          )}
-          <button
-            onClick={() => setViewDate(subMonths(viewDate, 1))}
-            className="p-1.5 rounded-lg"
-            style={{ color: "var(--text-3)" }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.color      = "var(--text-1)";
-              el.style.background = "var(--bg-hover)";
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.color      = "var(--text-3)";
-              el.style.background = "transparent";
-            }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => setViewDate(addMonths(viewDate, 1))}
-            className="p-1.5 rounded-lg"
-            style={{ color: "var(--text-3)" }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.color      = "var(--text-1)";
-              el.style.background = "var(--bg-hover)";
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.color      = "var(--text-3)";
-              el.style.background = "transparent";
-            }}
-          >
-            <ChevronRight size={16} />
-          </button>
+            <button
+              onClick={() => navigate(1)}
+              className="p-1.5 rounded-lg"
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = "var(--text-1)"; el.style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = "var(--text-3)"; el.style.background = "transparent"; }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading2 ? (
         <div
           className="flex-1 flex items-center justify-center text-sm"
           style={{ color: "var(--text-4)" }}
@@ -541,61 +589,51 @@ export default function MonthPage() {
             setOverDate(null);
           }}
         >
-          {/* Day-name header row */}
-          <div
-            style={{
-              display:               "grid",
-              gridTemplateColumns:   "repeat(7, 1fr)",
-              gap:                   4,
-              marginBottom:          4,
-            }}
-          >
-            {DAY_LABELS.map((d) => (
-              <div
-                key={d}
-                style={{
-                  textAlign:      "center",
-                  fontSize:       10,
-                  fontWeight:     600,
-                  textTransform:  "uppercase",
-                  letterSpacing:  "0.07em",
-                  color:          "var(--text-4)",
-                  padding:        "2px 0",
-                }}
-              >
-                {d}
+          {viewMode === "month" ? (
+            <>
+              {/* Day-name header row */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                {DAY_LABELS.map((d) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-4)", padding: "2px 0" }}>
+                    {d}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          {/* Calendar grid — scrollable so cells never get squished */}
-          <div
-            style={{
-              display:             "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
-              gridAutoRows:        `minmax(${rowHeight}px, auto)`,
-              gap:                 4,
-              flex:                1,
-              minHeight:           0,
-              overflowY:           "auto",
-            }}
-          >
-            {grid.map((day) => {
-              const key = format(day, "yyyy-MM-dd");
-              return (
-                <DayCell
-                  key={key}
-                  date={day}
-                  items={byDate[key] ?? []}
-                  inCurrentMonth={isSameMonth(day, viewDate)}
-                  isOver={overDate === key}
-                  onToggle={handleToggle}
-                  onOpen={setDetailItem}
-                  onClickDate={setAddTaskDate}
-                />
-              );
-            })}
-          </div>
+              {/* Calendar grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: `minmax(${rowHeight}px, auto)`, gap: 4, flex: 1, minHeight: 0, overflowY: "auto" }}>
+                {grid.map((day) => {
+                  const key = format(day, "yyyy-MM-dd");
+                  return (
+                    <DayCell key={key} date={day} items={byDate[key] ?? []}
+                      inCurrentMonth={isSameMonth(day, viewDate)} isOver={overDate === key}
+                      onToggle={handleToggle} onOpen={setDetailItem} onClickDate={setAddTaskDate} />
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Strip view day headers */}
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${stripDays}, minmax(0,1fr))`, gap: 4, marginBottom: 4 }}>
+                {stripGrid.map((day) => (
+                  <div key={format(day, "yyyy-MM-dd")} style={{ textAlign: "center", fontSize: 10, fontWeight: isToday(day) ? 700 : 600, textTransform: "uppercase", letterSpacing: "0.07em", color: isToday(day) ? "var(--accent)" : "var(--text-4)", padding: "2px 0" }}>
+                    {format(day, stripDays <= 7 ? "EEE d" : "EEE d MMM")}
+                  </div>
+                ))}
+              </div>
+              {/* Strip grid */}
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${stripDays}, minmax(0,1fr))`, gap: 4, flex: 1, minHeight: 0, overflowY: "auto" }}>
+                {stripGrid.map((day) => {
+                  const key = format(day, "yyyy-MM-dd");
+                  return (
+                    <DayCell key={key} date={day} items={byDate[key] ?? []}
+                      inCurrentMonth={true} isOver={overDate === key}
+                      onToggle={handleToggle} onOpen={setDetailItem} onClickDate={setAddTaskDate} />
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Drag overlay */}
           <DragOverlay>
@@ -642,11 +680,11 @@ export default function MonthPage() {
               headers: { "Content-Type": "application/json" },
               body:    JSON.stringify(patch),
             });
-            queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+            invalidateActive();
           }}
           onDelete={async (id) => {
             await fetch(`/api/items/${id}`, { method: "DELETE" });
-            queryClient.invalidateQueries({ queryKey: ["month", year, month] });
+            invalidateActive();
             setDetailItem(null);
           }}
         />
