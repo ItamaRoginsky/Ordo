@@ -27,12 +27,13 @@ export async function getOrdoUser(): Promise<User | null> {
     });
   } else {
     try {
+      const fallbackPicture = `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name ?? email ?? sub)}`;
       user = await db.user.create({
         data: {
           auth0Id: sub,
           email: email ?? "",
           name: name ?? null,
-          picture: picture ?? null,
+          picture: picture ?? fallbackPicture,
           lastLoginAt: new Date(),
         },
       });

@@ -21,11 +21,13 @@ export async function POST(req: NextRequest) {
   const existing = await db.user.findUnique({ where: { email: email.trim() } });
   if (existing) return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
 
+  const displayName = name?.trim() || email.trim();
   const user = await db.user.create({
     data: {
       auth0Id: `pending|${randomUUID()}`,
       email: email.trim(),
       name: name?.trim() || null,
+      picture: `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(displayName)}`,
     },
   });
 

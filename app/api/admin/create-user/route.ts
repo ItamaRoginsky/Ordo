@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   const caller = await getOrdoUser();
-  if (!caller)         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!caller.isAdmin) return NextResponse.json({ error: "Forbidden" },    { status: 403 });
+  if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!caller.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { email, password, name } = await req.json();
 
@@ -36,21 +36,22 @@ export async function POST(req: NextRequest) {
 
   const user = await db.user.create({
     data: {
-      auth0Id:  auth0User.user_id,
+      auth0Id: auth0User.user_id,
       email,
       name,
-      isAdmin:  false,
+      picture: `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+      isAdmin: false,
       isActive: true,
     },
   });
 
   await db.auditLog.create({
     data: {
-      actorId:    caller.id,
-      action:     "USER_CREATED",
-      targetId:   user.id,
+      actorId: caller.id,
+      action: "USER_CREATED",
+      targetId: user.id,
       targetType: "User",
-      meta:       JSON.stringify({ email, name, createdBy: caller.email }),
+      meta: JSON.stringify({ email, name, createdBy: caller.email }),
     },
   });
 
