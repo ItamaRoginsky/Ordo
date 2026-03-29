@@ -6,6 +6,7 @@ import { format, addWeeks, subWeeks, addDays, isToday, parseISO, isSameDay } fro
 import { Target, ChevronLeft, ChevronRight, Settings, Plus, Check, X, Trash2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { AddTaskModal, NewTask } from "@/components/tasks/AddTaskModal";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -200,7 +201,7 @@ function GoalCard({
           onClick={() => onDeleteGoal(goal.id)}
           style={{
             background: "transparent", border: "none", cursor: "pointer",
-            color: "transparent", padding: 3, flexShrink: 0, borderRadius: 6,
+            color: "var(--text-4)", padding: 3, flexShrink: 0, borderRadius: 6,
             transition: "color 0.15s, background 0.15s",
           }}
           onMouseEnter={(e) => {
@@ -208,7 +209,7 @@ function GoalCard({
             (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.color = "transparent";
+            (e.currentTarget as HTMLElement).style.color = "var(--text-4)";
             (e.currentTarget as HTMLElement).style.background = "transparent";
           }}
         >
@@ -329,7 +330,7 @@ function TaskRow({
         onClick={onDelete}
         style={{
           background: "transparent", border: "none", cursor: "pointer",
-          color: rowHovered ? "var(--sys-red)" : "transparent",
+          color: rowHovered ? "var(--sys-red)" : "var(--text-4)",
           padding: 0, flexShrink: 0,
           transition: "color 0.1s",
         }}
@@ -540,6 +541,7 @@ export default function WeekPage() {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   const allGoalsDone = target > 0 && completedGoals >= target;
+  const isMobile = useIsMobile();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "clamp(12px, 3vw, 24px)" }}>
@@ -696,12 +698,13 @@ export default function WeekPage() {
       ) : (
         <div
           style={{
-            flex: 1,
+            flex: isMobile ? "none" : 1,
             display: "grid",
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            gridTemplateRows: `repeat(${rows}, 1fr)`,
+            gridTemplateColumns: isMobile ? "1fr" : `repeat(${cols}, 1fr)`,
+            gridTemplateRows: isMobile ? "auto" : `repeat(${rows}, 1fr)`,
             gap: 12,
             minHeight: 0,
+            overflowY: isMobile ? "auto" : undefined,
           }}
         >
           {goals.map((goal, idx) => (

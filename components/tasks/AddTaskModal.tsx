@@ -493,33 +493,62 @@ export function AddTaskModal({
     </div>
   );
 
-  // On mobile (and not compact inline mode), render as a fixed bottom sheet
-  if (isMobile && !compact) {
-    return (
-      <>
-        <div
-          onClick={onClose}
-          style={{
-            position: "fixed", inset: 0, zIndex: 200,
-            background: "rgba(0,0,0,0.5)",
-            backdropFilter: "blur(2px)",
-          }}
-        />
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0, left: 0, right: 0,
-            zIndex: 201,
-            borderRadius: "16px 16px 0 0",
-            paddingBottom: "env(safe-area-inset-bottom)",
-            maxHeight: "90dvh",
-            overflowY: "auto",
-          }}
-        >
-          {card}
-        </div>
-      </>
-    );
+  // Non-compact: always render as an overlay modal
+  if (!compact) {
+    if (isMobile) {
+      // Mobile: fixed bottom sheet
+      return (
+        <>
+          <div
+            onClick={onClose}
+            style={{
+              position: "fixed", inset: 0, zIndex: 200,
+              background: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(2px)",
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              bottom: 0, left: 0, right: 0,
+              zIndex: 201,
+              borderRadius: "16px 16px 0 0",
+              paddingBottom: "env(safe-area-inset-bottom)",
+              maxHeight: "90dvh",
+              overflowY: "auto",
+            }}
+          >
+            {card}
+          </div>
+        </>
+      );
+    } else {
+      // Desktop: centered modal with backdrop
+      return (
+        <>
+          <div
+            onClick={onClose}
+            style={{
+              position: "fixed", inset: 0, zIndex: 200,
+              background: "rgba(0,0,0,0.45)",
+              backdropFilter: "blur(2px)",
+            }}
+          />
+          <div
+            style={{
+              position: "fixed", inset: 0, zIndex: 201,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "24px",
+              pointerEvents: "none",
+            }}
+          >
+            <div style={{ width: "100%", maxWidth: 480, pointerEvents: "auto" }}>
+              {card}
+            </div>
+          </div>
+        </>
+      );
+    }
   }
 
   return card;

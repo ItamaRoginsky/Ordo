@@ -136,7 +136,7 @@ function SubTaskRow({
       )}
       <button
         onClick={onDelete}
-        className="opacity-0 group-hover/sub:opacity-100 p-0.5 transition-all rounded"
+        className="opacity-30 group-hover/sub:opacity-100 p-0.5 transition-all rounded"
         style={{ color: "var(--text-4)" }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}
@@ -249,7 +249,7 @@ function TaskRow({
 
         <button
           onClick={() => onDelete(item.id)}
-          className="opacity-0 group-hover/row:opacity-100 p-0.5 transition-all rounded shrink-0"
+          className="opacity-30 group-hover/row:opacity-100 p-0.5 transition-all rounded shrink-0"
           style={{ color: "var(--text-4)" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--sys-red)"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-4)"; }}

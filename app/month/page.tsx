@@ -21,12 +21,12 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
-type ViewMode = "3" | "7" | "14" | "month";
+type ViewMode = "3" | "7" | "month";
 const VIEW_OPTIONS: { key: ViewMode; label: string }[] = [
   { key: "3",     label: "3d"    },
   { key: "7",     label: "7d"    },
-  { key: "14",    label: "14d"   },
   { key: "month", label: "Month" },
 ];
 import {
@@ -174,7 +174,7 @@ function TaskRow({
       {/* Name */}
       <span
         style={{
-          fontSize:       11,
+          fontSize:       "clamp(10px, 2.5vw, 11px)",
           flex:           1,
           overflow:       "hidden",
           textOverflow:   "ellipsis",
@@ -366,13 +366,16 @@ export default function MonthPage() {
   // For strip views, build the list of days to show
   const stripGrid = useMemo(() => {
     if (viewMode === "month") return [];
-    return Array.from({ length: stripDays }, (_, i) => addDays(stripStart, i));
-  }, [viewMode, stripStart, stripDays]);
+    return Array.from({ length: effectiveStripDays }, (_, i) => addDays(stripStart, i));
+  }, [viewMode, stripStart, effectiveStripDays]);
 
   const grid         = useMemo(() => buildGrid(viewDate), [viewDate]);
   const weeksInGrid  = grid.length / 7;
   const rowHeight    = Math.max(90, Math.floor(600 / weeksInGrid));
   const isNowMonth   = isSameMonth(viewDate, today);
+  const isMobile = useIsMobile();
+  // On mobile, cap strip views at 3 columns for readability
+  const effectiveStripDays = isMobile && stripDays === 7 ? 3 : stripDays;
 
   function invalidateActive() {
     if (viewMode === "month") {
@@ -614,7 +617,7 @@ export default function MonthPage() {
           ) : (
             <>
               {/* Strip view day headers */}
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${stripDays}, minmax(0,1fr))`, gap: 4, marginBottom: 4 }}>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${effectiveStripDays}, minmax(0,1fr))`, gap: 4, marginBottom: 4 }}>
                 {stripGrid.map((day) => (
                   <div key={format(day, "yyyy-MM-dd")} style={{ textAlign: "center", fontSize: 10, fontWeight: isToday(day) ? 700 : 600, textTransform: "uppercase", letterSpacing: "0.07em", color: isToday(day) ? "var(--accent)" : "var(--text-4)", padding: "2px 0" }}>
                     {format(day, stripDays <= 7 ? "EEE d" : "EEE d MMM")}
@@ -622,7 +625,7 @@ export default function MonthPage() {
                 ))}
               </div>
               {/* Strip grid */}
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${stripDays}, minmax(0,1fr))`, gap: 4, flex: 1, minHeight: 0, overflowY: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${effectiveStripDays}, minmax(0,1fr))`, gap: 4, flex: 1, minHeight: 0, overflowY: "auto" }}>
                 {stripGrid.map((day) => {
                   const key = format(day, "yyyy-MM-dd");
                   return (

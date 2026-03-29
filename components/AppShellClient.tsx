@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Sun, CalendarDays, FolderOpen, Menu, X, Shield, Target } from "lucide-react";
+import { Home, Sun, CalendarDays, FolderOpen, Menu, X, Shield, Target, Plus } from "lucide-react";
 import { Moon } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Sidebar } from "./sidebar/Sidebar";
+import { NewProjectModal } from "./board/NewProjectModal";
 import type { Board, User } from "@prisma/client";
 
 interface AppShellClientProps {
@@ -20,6 +21,7 @@ export function AppShellClient({ children, boards, user }: AppShellClientProps) 
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileNewProjectOpen, setMobileNewProjectOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   // Close mobile menu on navigation
@@ -151,9 +153,22 @@ export function AppShellClient({ children, boards, user }: AppShellClientProps) 
                   letterSpacing: ".1em",
                   color: "var(--text-4)",
                   fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
               >
-                Projects
+                <span>Projects</span>
+                <button
+                  onClick={() => setMobileNewProjectOpen(true)}
+                  style={{
+                    background: "transparent", border: "none", cursor: "pointer",
+                    color: "var(--text-3)", padding: 0, display: "flex", alignItems: "center",
+                  }}
+                  title="New project"
+                >
+                  <Plus size={14} />
+                </button>
               </div>
               {boards.map((board) => (
                 <Link
@@ -304,6 +319,11 @@ export function AppShellClient({ children, boards, user }: AppShellClientProps) 
             </div>
           </div>
         </>
+      )}
+
+      {/* Mobile new project modal */}
+      {mobileNewProjectOpen && (
+        <NewProjectModal onClose={() => setMobileNewProjectOpen(false)} />
       )}
 
       {/* MAIN CONTENT */}

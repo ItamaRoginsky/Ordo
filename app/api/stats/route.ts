@@ -44,7 +44,10 @@ export async function GET() {
   const openTasks = allItems.filter((i) => !i.completedAt).length;
 
   const overdueTasks = allItems.filter(
-    (i) => !i.completedAt && i.deadline && i.deadline < todayStart
+    (i) => !i.completedAt && (
+      (i.deadline && i.deadline < todayStart) ||
+      (i.scheduledDate && i.scheduledDate < todayStart)
+    )
   ).length;
 
   const totalItems = allItems.length;
