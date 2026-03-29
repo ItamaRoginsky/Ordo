@@ -16,24 +16,25 @@ export async function getOrdoUser(): Promise<User | null> {
   let user: User;
   const preCreated = email ? await db.user.findUnique({ where: { email } }) : null;
   if (preCreated) {
+    const dicebearPicture = `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name ?? email ?? sub)}`;
     user = await db.user.update({
       where: { id: preCreated.id },
       data: {
         auth0Id: sub,
         name: name ?? preCreated.name,
-        picture: picture ?? preCreated.picture,
+        picture: preCreated.picture ?? dicebearPicture,
         lastLoginAt: new Date(),
       },
     });
   } else {
     try {
-      const fallbackPicture = `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name ?? email ?? sub)}`;
+      const dicebearPicture = `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name ?? email ?? sub)}`;
       user = await db.user.create({
         data: {
           auth0Id: sub,
           email: email ?? "",
           name: name ?? null,
-          picture: picture ?? fallbackPicture,
+          picture: dicebearPicture,
           lastLoginAt: new Date(),
         },
       });
