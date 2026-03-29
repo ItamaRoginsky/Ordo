@@ -11,11 +11,11 @@ function randomString(length: number) {
     return result;
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const me = await getOrdoUser();
     if (!me?.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const { id } = params;
+    const { id } = await context.params;
     const newSeed = randomString(10);
     const newUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${newSeed}`;
 

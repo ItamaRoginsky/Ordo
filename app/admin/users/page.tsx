@@ -80,6 +80,21 @@ export default function AdminUsersPage() {
 
   async function patchUser(id: string, patch: Partial<OrdoUser>) {
     setActionError(null);
+    // Special case: if patch.picture is "/api/users/{id}/regenerate-avatar", call that endpoint
+    if (patch.picture && typeof patch.picture === "string" && patch.picture.startsWith("/api/users/")) {
+      try {
+        const res = await fetch(`${patch.picture}/regenerate-avatar`, { method: "POST" });
+        if (!res.ok) {
+          const data = await res.json();
+          setActionError(data.error ?? "Failed to regenerate avatar");
+          return;
+        }
+        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      } catch {
+        setActionError("Network error");
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/users/${id}`, {
         method: "PATCH",
