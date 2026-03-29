@@ -262,7 +262,20 @@ export default function AdminUsersPage() {
                       Pwd
                     </button>
                     <button
-                      onClick={() => patchUser(user.id, { picture: `/api/users/${user.id}/regenerate-avatar` })}
+                      onClick={async () => {
+                        setActionError(null);
+                        try {
+                          const res = await fetch(`/api/users/${user.id}/regenerate-avatar`, { method: "POST" });
+                          if (!res.ok) {
+                            const data = await res.json();
+                            setActionError(data.error ?? "Failed to regenerate avatar");
+                            return;
+                          }
+                          queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+                        } catch {
+                          setActionError("Network error");
+                        }
+                      }}
                       className="text-[10px] px-2 py-1 rounded-lg transition-colors"
                       style={{ border: "1px solid var(--border)", color: "var(--chart-primary)" }}
                       title="Regenerate avatar"
