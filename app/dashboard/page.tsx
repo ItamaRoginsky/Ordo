@@ -127,7 +127,7 @@ export default function DashboardPage() {
       <div className="px-5 py-4 flex items-center justify-between" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
         <div>
           <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>
-            {getGreeting()}{data.userName ? `, ${data.userName}` : ""} —{" "}
+            {getGreeting()}{data.userName ? `, ${data.userName}` : ""} - {" "}
             {todayCount > 0
               ? `${todayCount} task${todayCount !== 1 ? "s" : ""} planned for today`
               : "nothing planned for today"}
