@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   weekEnd.setDate(weekEnd.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
 
-  const [goals, inboxBoard] = await Promise.all([
+  const [goals, inboxBoard, projects] = await Promise.all([
     db.weeklyGoal.findMany({
       where: { userId: me.id, weekStart },
       include: {
@@ -45,6 +45,11 @@ export async function GET(req: NextRequest) {
         groups: { select: { id: true }, orderBy: { position: "asc" }, take: 1 },
       },
     }),
+    db.board.findMany({
+      where: { ownerId: me.id, type: "project" },
+      select: { id: true, name: true, color: true, icon: true },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   const inboxGroupId = inboxBoard?.groups[0]?.id ?? null;
@@ -65,6 +70,8 @@ export async function GET(req: NextRequest) {
     goals: serializedGoals,
     weeklyGoalsTarget: me.weeklyGoalsTarget,
     inboxGroupId,
+    inboxBoard: inboxBoard ? { id: inboxBoard.id, name: inboxBoard.name, color: inboxBoard.color } : null,
+    projects,
     weekStart: weekStart.toISOString(),
     weekEnd:   weekEnd.toISOString(),
   });
