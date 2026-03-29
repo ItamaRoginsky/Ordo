@@ -247,6 +247,16 @@ export default function AdminUsersPage() {
                       Pwd
                     </button>
                     <button
+                      onClick={() => patchUser(user.id, { picture: `/api/users/${user.id}/regenerate-avatar` })}
+                      className="text-[10px] px-2 py-1 rounded-lg transition-colors"
+                      style={{ border: "1px solid var(--border)", color: "var(--chart-primary)" }}
+                      title="Regenerate avatar"
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      Regen Avatar
+                    </button>
+                    <button
                       onClick={() => setDeleteTarget(user)}
                       className="text-[10px] px-2 py-1 rounded-lg transition-colors"
                       style={{ border: "1px solid var(--border)", color: "var(--sys-red)" }}
