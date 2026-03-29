@@ -363,12 +363,6 @@ export default function MonthPage() {
   const inboxBoard   = activeData?.inboxBoard   ?? null;
   const projects     = activeData?.projects     ?? [];
 
-  // For strip views, build the list of days to show
-  const stripGrid = useMemo(() => {
-    if (viewMode === "month") return [];
-    return Array.from({ length: effectiveStripDays }, (_, i) => addDays(stripStart, i));
-  }, [viewMode, stripStart, effectiveStripDays]);
-
   const grid         = useMemo(() => buildGrid(viewDate), [viewDate]);
   const weeksInGrid  = grid.length / 7;
   const rowHeight    = Math.max(90, Math.floor(600 / weeksInGrid));
@@ -376,6 +370,12 @@ export default function MonthPage() {
   const isMobile = useIsMobile();
   // On mobile, cap strip views at 3 columns for readability
   const effectiveStripDays = isMobile && stripDays === 7 ? 3 : stripDays;
+
+  // For strip views, build the list of days to show
+  const stripGrid = useMemo(() => {
+    if (viewMode === "month") return [];
+    return Array.from({ length: effectiveStripDays }, (_, i) => addDays(stripStart, i));
+  }, [viewMode, stripStart, effectiveStripDays]);
 
   function invalidateActive() {
     if (viewMode === "month") {
