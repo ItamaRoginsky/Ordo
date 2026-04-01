@@ -268,14 +268,14 @@ export function TaskDetailModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 backdrop-blur-sm"
+        className="fixed inset-0 z-40 backdrop-blur-sm animate-backdrop-in"
         style={{ background: "rgba(0,0,0,0.6)" }}
         onClick={onClose}
       />
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div
-          className="shadow-2xl w-full flex flex-col overflow-hidden"
+          className="shadow-2xl w-full flex flex-col overflow-hidden animate-scale-in"
           style={{
             background: "var(--bg-card)",
             ...(isMobile ? {

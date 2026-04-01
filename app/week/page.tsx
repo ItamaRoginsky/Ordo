@@ -52,6 +52,7 @@ const PRIORITY_DOTS: Record<string, string> = {
 function GoalCard({
   goal,
   colorIndex,
+  animDelay,
   onToggleGoal,
   onRenameGoal,
   onDeleteGoal,
@@ -61,6 +62,7 @@ function GoalCard({
 }: {
   goal: WeeklyGoal;
   colorIndex: number;
+  animDelay?: number;
   onToggleGoal: (goal: WeeklyGoal) => void;
   onRenameGoal: (id: string, title: string) => void;
   onDeleteGoal: (id: string) => void;
@@ -98,8 +100,9 @@ function GoalCard({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        transition: "transform 0.15s ease, box-shadow 0.15s ease",
-        transform: hovered && !isDone ? "translateY(-2px)" : "none",
+        transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease",
+        transform: hovered && !isDone ? "translateY(-3px)" : "none",
+        animation: `fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${animDelay ?? 0}ms both`,
         boxShadow: hovered && !isDone
           ? `0 8px 32px ${color.bg}, 0 2px 8px rgba(0,0,0,0.12)`
           : "0 1px 4px rgba(0,0,0,0.06)",
@@ -712,6 +715,7 @@ export default function WeekPage() {
               key={goal.id}
               goal={goal}
               colorIndex={idx}
+              animDelay={idx * 60}
               onToggleGoal={toggleGoal}
               onRenameGoal={renameGoal}
               onDeleteGoal={deleteGoal}

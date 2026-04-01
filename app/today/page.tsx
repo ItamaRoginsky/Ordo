@@ -580,7 +580,7 @@ export default function TodayPage() {
   return (
     <div className="max-w-2xl mx-auto py-8" style={{ padding: "clamp(12px, 4vw, 24px)" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-1">
+      <div className="flex items-center gap-3 mb-1 animate-fade-in-up">
         <Sun size={20} className="text-[#f59e0b]" />
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>My Day</h1>
         <div className="flex-1" />
@@ -605,7 +605,7 @@ export default function TodayPage() {
       </div>
 
       {/* Date navigation */}
-      <div className="flex items-center gap-2 mb-8 ml-8">
+      <div className="flex items-center gap-2 mb-8 ml-8 animate-fade-in-up stagger-1">
         <button
           onClick={() => setViewDate(subDays(viewDate, 1))}
           className="p-0.5 transition-colors"
@@ -704,21 +704,22 @@ export default function TodayPage() {
           )}
 
           {/* Priority groups */}
-          {grouped.map((group) => (
-            <PrioritySection
-              key={group.key}
-              group={group}
-              items={group.items}
-              onToggleComplete={toggleComplete}
-              onDelete={deleteItem}
-              onUpdate={updateItem}
-              onAddSubTask={addSubTask}
-              onOpenDetail={setDetailItem}
-              onAddTask={addTask}
-              projects={projects}
-              inboxProject={inboxBoard}
-              viewDate={viewDate}
-            />
+          {grouped.map((group, i) => (
+            <div key={group.key} className="animate-fade-in-up" style={{ animationDelay: `${(i + 2) * 60}ms` }}>
+              <PrioritySection
+                group={group}
+                items={group.items}
+                onToggleComplete={toggleComplete}
+                onDelete={deleteItem}
+                onUpdate={updateItem}
+                onAddSubTask={addSubTask}
+                onOpenDetail={setDetailItem}
+                onAddTask={addTask}
+                projects={projects}
+                inboxProject={inboxBoard}
+                viewDate={viewDate}
+              />
+            </div>
           ))}
 
           {/* Empty state — show add button for Uncategorized even when no tasks */}

@@ -307,12 +307,12 @@ export function TaskDetailPanel({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-40 animate-backdrop-in"
         style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
         onClick={onClose}
       />
       <div
-        className="fixed z-50 flex flex-col overflow-hidden"
+        className="fixed z-50 flex flex-col overflow-hidden animate-modal-in"
         style={{
           top: "50%",
           left: "50%",

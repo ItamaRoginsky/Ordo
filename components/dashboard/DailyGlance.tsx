@@ -103,9 +103,9 @@ export function DailyGlance({ data }: { data: GlanceData | undefined }) {
       </div>
 
       {/* Task list */}
-      <div style={{ padding: "0 14px", flex: 1 }}>
+      <div key={activePri} style={{ padding: "0 14px", flex: 1 }}>
         {allItems.length === 0 ? (
-          <div style={{
+          <div className="animate-fade-in-up" style={{
             padding: "18px 0",
             textAlign: "center",
             fontSize: 11,
@@ -117,12 +117,14 @@ export function DailyGlance({ data }: { data: GlanceData | undefined }) {
           shown.map((item, i) => (
             <div
               key={item.id}
+              className="animate-fade-in-up"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 9,
                 padding: "8px 0",
                 borderBottom: i < shown.length - 1 ? "1px solid var(--border)" : "none",
+                animationDelay: `${i * 50}ms`,
               }}
             >
               <button

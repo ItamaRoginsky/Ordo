@@ -87,6 +87,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
 
   return (
     <div
+      className="animate-backdrop-in"
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
         background: "rgba(0,0,0,0.5)",
@@ -96,7 +97,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div style={{
+      <div className="animate-fade-in-up" style={{
         width: "100%", maxWidth: 520,
         background: "var(--bg-popover)",
         border: "1px solid var(--border-strong)",

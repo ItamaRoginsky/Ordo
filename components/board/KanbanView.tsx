@@ -108,19 +108,21 @@ function KanbanCard({ item }: { item: ItemWithValues }) {
     <div
       style={{
         background: "var(--bg-card)",
-        border: `1px solid ${item.completedAt ? "var(--border)" : "var(--border)"}`,
+        border: "1px solid var(--border)",
         borderRadius: 10,
         padding: "10px 12px",
         cursor: "pointer",
-        transition: "border-color 0.12s, box-shadow 0.12s",
+        transition: "border-color 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease",
         opacity: item.completedAt ? 0.6 : 1,
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLElement).style.borderColor = "var(--border-strong)";
-        (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow)";
+        (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+        (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(0,0,0,0.14)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
         (e.currentTarget as HTMLElement).style.boxShadow = "none";
       }}
     >
@@ -272,10 +274,16 @@ export function KanbanView({
       onDragCancel={() => { setDraggingId(null); setOverColumn(null); }}
     >
       <div style={{ display: "flex", gap: 12, height: "100%", minHeight: "calc(100vh - 140px)", alignItems: "flex-start" }}>
-        {KANBAN_COLUMNS.map((col) => {
+        {KANBAN_COLUMNS.map((col, colIdx) => {
           const colItems = getItemsForColumn(col.value);
           return (
-            <div key={col.value} style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column" }}>
+            <div
+              key={col.value}
+              style={{
+                flex: 1, minWidth: 160, display: "flex", flexDirection: "column",
+                animation: `fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${colIdx * 60}ms both`,
+              }}
+            >
               {/* Column header */}
               <div
                 style={{

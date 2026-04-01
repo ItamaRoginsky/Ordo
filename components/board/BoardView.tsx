@@ -254,16 +254,18 @@ export function BoardView({ board }: { board: BoardWithData }) {
               onDragEnd={handleCrossGroupDragEnd}
             >
             <div className="space-y-5 min-w-max">
-              {board.groups.map((group) => (
+              {board.groups.map((group, gIdx) => (
                 <DroppableGroup key={group.id} groupId={group.id}>
-                  <GroupRow
-                    group={group}
-                    columns={board.columns}
-                    boardId={board.id}
-                    boardName={board.name}
-                    boardIcon={board.icon ?? null}
-                    boardColor={board.color ?? null}
-                  />
+                  <div className="animate-fade-in-up" style={{ animationDelay: `${gIdx * 50}ms` }}>
+                    <GroupRow
+                      group={group}
+                      columns={board.columns}
+                      boardId={board.id}
+                      boardName={board.name}
+                      boardIcon={board.icon ?? null}
+                      boardColor={board.color ?? null}
+                    />
+                  </div>
                 </DroppableGroup>
               ))}
             </div>

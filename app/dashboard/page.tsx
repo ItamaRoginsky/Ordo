@@ -124,7 +124,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-5" style={{ padding: 'clamp(12px, 4vw, 24px)' }}>
       {/* Greeting banner */}
-      <div className="px-5 py-4 flex items-center justify-between" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
+      <div className="px-5 py-4 flex items-center justify-between animate-fade-in-up" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
         <div>
           <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>
             {getGreeting()}{data.userName ? `, ${data.userName}` : ""} - {" "}
@@ -153,23 +153,24 @@ export default function DashboardPage() {
       <div className="grid grid-cols-4 gap-4 kpi-grid">
         <KpiCard value={doneThisWeek} label="Done this week" barColor="#22c55e"
           barWidth={doneThisWeek > 0 ? Math.min(100, (doneThisWeek / Math.max(openTasks, 1)) * 100) : 0}
-          href="/done" />
+          href="/done" className="animate-fade-in-up stagger-1" />
         <KpiCard value={openTasks} label="Open tasks" barColor="var(--chart-primary)"
           barWidth={openTasks > 0 ? Math.min(100, (openTasks / Math.max(openTasks + doneThisWeek, 1)) * 100) : 0}
-          href="/today" />
+          href="/today" className="animate-fade-in-up stagger-2" />
         <KpiCard value={overdueTasks}
           label={overdueTasks === 0 ? "No overdue tasks" : "Overdue"}
           barColor={overdueTasks === 0 ? "#22c55e" : "var(--sys-red)"}
           barWidth={overdueTasks === 0 ? 100 : Math.min(100, (overdueTasks / Math.max(openTasks, 1)) * 100)}
           valueColor={overdueTasks > 0 ? "var(--sys-red)" : undefined}
           href={overdueTasks > 0 ? "/overdue" : undefined}
+          className="animate-fade-in-up stagger-3"
         />
         <KpiCard value={`${completionRate}%`} label="Completion rate" barColor="#a855f7"
-          barWidth={completionRate} sub={`${todayDoneCount} done today`} />
+          barWidth={completionRate} sub={`${todayDoneCount} done today`} className="animate-fade-in-up stagger-4" />
       </div>
 
       {/* Day Progress + Open Projects */}
-      <div className="grid grid-cols-2 gap-4 widget-grid">
+      <div className="grid grid-cols-2 gap-4 widget-grid animate-fade-in-up stagger-5">
         <DayProgress data={data.dayProgress} />
 
         <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
@@ -195,7 +196,11 @@ export default function DashboardPage() {
                   const pct = p.totalSteps > 0 ? Math.round((p.doneSteps / p.totalSteps) * 100) : 0;
                   const complete = p.totalSteps > 0 && pct === 100;
                   return (
-                    <Link key={p.id} href={`/boards/${p.id}`} className="block group/proj">
+                    <Link key={p.id} href={`/boards/${p.id}`} className="block group/proj"
+                      style={{ transition: "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)", display: "block" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateX(3px)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateX(0)"; }}
+                    >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm">{p.icon}</span>
@@ -229,7 +234,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-2 gap-4 widget-grid">
+      <div className="grid grid-cols-2 gap-4 widget-grid animate-fade-in-up stagger-6">
         <div className="p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
           <h2 className="text-sm font-medium mb-4" style={{ color: "var(--text-2)" }}>Weekly velocity</h2>
           <ResponsiveContainer width="100%" height={140}>
@@ -249,7 +254,7 @@ export default function DashboardPage() {
 }
 
 function KpiCard({
-  value, label, sub, barColor, barWidth, valueColor, href,
+  value, label, sub, barColor, barWidth, valueColor, href, className,
 }: {
   value: string | number;
   label: string;
@@ -258,6 +263,7 @@ function KpiCard({
   barWidth: number;
   valueColor?: string;
   href?: string;
+  className?: string;
 }) {
   const inner = (
     <>
@@ -273,18 +279,30 @@ function KpiCard({
     </>
   );
 
-  const cardStyle = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" };
+  const cardStyle = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)", transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease" };
 
   if (href) {
     return (
-      <Link href={href} className="p-4 relative overflow-hidden flex flex-col transition-opacity hover:opacity-80" style={cardStyle}>
+      <Link
+        href={href}
+        className={`p-4 relative overflow-hidden flex flex-col ${className ?? ""}`}
+        style={cardStyle}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(0,0,0,0.18)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow)";
+        }}
+      >
         {inner}
       </Link>
     );
   }
 
   return (
-    <div className="p-4 relative overflow-hidden flex flex-col" style={cardStyle}>
+    <div className={`p-4 relative overflow-hidden flex flex-col ${className ?? ""}`} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
       {inner}
     </div>
   );

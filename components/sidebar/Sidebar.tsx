@@ -88,14 +88,14 @@ export function Sidebar({ boards, user }: SidebarProps) {
         </div>
         <nav style={{ padding: "0 8px", marginBottom: 12 }}>
           <NavItem href="/dashboard" label="Home"    active={pathname === "/dashboard" || pathname === "/"}
-            prefetchKey={["stats"]} prefetchUrl="/api/stats" />
+            prefetchKey={["stats"]} prefetchUrl="/api/stats" className="animate-slide-in-left stagger-1" />
           <NavItem href="/today"     label="My Day"  active={pathname === "/today"}
             prefetchKey={["today", new Date().toISOString().split("T")[0]]}
-            prefetchUrl={`/api/today?date=${new Date().toISOString().split("T")[0]}`} />
+            prefetchUrl={`/api/today?date=${new Date().toISOString().split("T")[0]}`} className="animate-slide-in-left stagger-2" />
           <NavItem href="/week"      label="Goals"  active={pathname === "/week"}
-            prefetchKey={["weekly"]} prefetchUrl="/api/weekly" />
+            prefetchKey={["weekly"]} prefetchUrl="/api/weekly" className="animate-slide-in-left stagger-3" />
           <NavItem href="/month"     label="My Month" active={pathname === "/month"}
-            prefetchKey={["month"]} prefetchUrl="/api/month" />
+            prefetchKey={["month"]} prefetchUrl="/api/month" className="animate-slide-in-left stagger-4" />
         </nav>
 
         <div style={{ margin: "0 12px 8px", borderTop: "1px solid var(--border)" }} />
@@ -114,6 +114,7 @@ export function Sidebar({ boards, user }: SidebarProps) {
               board={board}
               index={i}
               active={pathname.startsWith(`/boards/${board.id}`)}
+              animDelay={Math.min(i * 40 + 250, 500)}
             />
           ))}
           {boards.length === 0 && (
@@ -203,12 +204,13 @@ export function Sidebar({ boards, user }: SidebarProps) {
   );
 }
 
-function NavItem({ href, label, active, prefetchKey, prefetchUrl }: {
+function NavItem({ href, label, active, prefetchKey, prefetchUrl, className }: {
   href: string;
   label: string;
   active: boolean;
   prefetchKey?: unknown[];
   prefetchUrl?: string;
+  className?: string;
 }) {
   const queryClient = useQueryClient();
 
@@ -230,6 +232,7 @@ function NavItem({ href, label, active, prefetchKey, prefetchUrl }: {
   return (
     <Link
       href={href}
+      className={className}
       style={{
         display: "flex",
         alignItems: "center",
@@ -282,7 +285,7 @@ function NewProjectButton() {
   );
 }
 
-function BoardItem({ board, index, active }: { board: Board; index: number; active: boolean }) {
+function BoardItem({ board, index, active, animDelay }: { board: Board; index: number; active: boolean; animDelay?: number }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -300,7 +303,10 @@ function BoardItem({ board, index, active }: { board: Board; index: number; acti
   }
 
   return (
-    <div style={{ position: "relative", display: "flex", alignItems: "center" }} className="group/board">
+    <div
+      style={{ position: "relative", display: "flex", alignItems: "center", animation: `slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) ${animDelay ?? 250}ms both` }}
+      className="group/board"
+    >
       <Link
         href={`/boards/${board.id}`}
         style={{
@@ -372,9 +378,9 @@ function BoardItem({ board, index, active }: { board: Board; index: number; acti
       {/* Confirm dialog */}
       <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-50" />
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-50 animate-backdrop-in" />
           <Dialog.Content
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] rounded-2xl p-6 shadow-2xl z-50"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] rounded-2xl p-6 shadow-2xl z-50 animate-modal-in"
             style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)" }}
           >
             <Dialog.Title style={{ fontSize: 15, fontWeight: 600, color: "var(--text-1)", marginBottom: 4 }}>
