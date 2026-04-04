@@ -30,7 +30,7 @@
     "lucide-react": "^1.0.1",
     "next": "^16.2.1",
     "postcss": "^8.5.8",
-    "prisma": "^6.19.2",
+    "prisma": "^6.19.3",
     "recharts": "^3.8.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
